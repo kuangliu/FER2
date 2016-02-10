@@ -1,4 +1,1 @@
-function [a, b] = main()
-    a = 20;
-    b = 3;
-end
+[W, loss_history] = train(W, X, y_train, opts);

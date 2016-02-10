@@ -6,11 +6,11 @@ v = zeros(size(W),'like',W);
 
 for it = 1:opts.num_iters
     % sample a batch
-    [X_batch, batch_idx] = datasample(X, opts.batch_size, 'Replace', false);
+    [X_batch, batch_idx] = datasample(X, opts.batch_size, 2, 'Replace', false);
     y_batch = y(batch_idx);
 
     % evaluate loss and gradient
-    [loss, dW] = svm_loss(W, X_batch, y_batch, opts.reg);
+    [loss, dW] = softmax_loss(W, X_batch, y_batch, opts.reg);
     loss_history(it) = loss;
 
     % perform parameter update, we use Adam update
