@@ -44,7 +44,7 @@ opts.batch_size = 256;
 W = randn(C, D, 'like', X_train) / sqrt(D);
 
 % Train the model
-[W, loss_history] = train(W, X, y_train, opts);
+[W, loss_history] = train_linear(W, X, y_train, opts);
 
 
 
