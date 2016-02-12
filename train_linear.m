@@ -10,13 +10,18 @@ for it = 1:opts.num_iters
     y_batch = y(batch_idx);
 
     % evaluate loss and gradient
-    [loss, dscores] = svm_loss(W*X_batch, y_batch);
+    %[loss, dscores] = svm_loss(W*X_batch, y_batch);
+    a = fc_layer(W, X_batch);
+    [loss, dscores] = svm_loss(a, y_batch);
+    
     
     % add regularization term
     loss_history(it) = loss + 0.5*opts.reg*sum(sum(W.*W));
 
     % compute the local gradients, add regularization term here
-    dW = dscores*X_batch' + opts.reg*W;
+    %dW = dscores*X_batch' + opts.reg*W;
+    dW = fc_layer(W, X_batch, dscores);  
+    dW = dW + opts.reg*W;
     
     % perform parameter update, we use Adam update
     beta1 = 0.9;

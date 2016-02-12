@@ -17,8 +17,11 @@ layer_num = numel(net);
 
 loss_history = zeros(opts.num_iters, 1);
 
-ms = cell(layer_num, 1);    % Adam update cache for each weighted layer
-vs = cell(layer_num, 1);
+ms = cell(1, layer_num);    % Adam update cache for each weighted layer
+vs = cell(1, layer_num);
+
+% m = zeros(10, 3073, 'single');    % cache for Adam update
+% v = zeros(10, 3073, 'single');
 
 W_sum = 0;  % weight square sum for regularizaiotn
 
@@ -35,9 +38,11 @@ for it = 1:opts.num_iters
 
         switch layer.type
             case 'fc'
-                ms{layer_ind} = zeros(size(layer.W), 'single');    % cache for Adam update
-                vs{layer_ind} = zeros(size(layer.W), 'single');
-                
+                if isempty(ms{layer_ind})  % if not initialized, set them to zero 
+                    ms{layer_ind} = zeros(size(layer.W), 'single');    % cache for Adam update
+                    vs{layer_ind} = zeros(size(layer.W), 'single');
+                end
+
                 net{layer_ind}.X = X_batch;      % save input for BP usage
                 X_batch = fc_layer(layer.W, X_batch);   % forward X_batch through FC layer
                 W_sum = W_sum + sum(sum(layer.W .* layer.W));
@@ -77,7 +82,6 @@ for it = 1:opts.num_iters
                 net{layer_ind}.W = layer.W - opts.lr*mb./(sqrt(vb) + 1e-7);
         end
     end
-    
 end
 
 
