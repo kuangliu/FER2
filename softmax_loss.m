@@ -1,40 +1,32 @@
-function [loss, dW] = softmax_loss(W, X, y, reg)
+function [loss, dscores] = softmax_loss(scores, y)
 %SOFTMAX_LOSS function
 %
 % Inputs have dimension D, there are C classes, and operate on minibatches
 % of N examples.
 %
 % Inputs:
-% - W: [C, D]
-% - X: [D, N]
+% - scores: [C, N]
 % - y: [1, N]   make sure y is 1 based
-% - reg: (float) regularization strength
 %
 % Returns a tuple of:
 % - loss: single number of the svm loss
-% - dW: gradient with respect to W, same shape as W
+% - dscores: gradient with respect to scores
 
 
-if ~isa(X, 'single')
-    X = single(X);
-end
+N = size(scores, 2);   % N samples
 
-[~, N] = size(X);   % N samples
-
-% compute scores
-scores = W * X;     % [C, N]
 target_ind = sub2ind(size(scores), y, 1:N);
 
-% compute loss
+% compute loss, no regularization yet
 probs = softmax(scores);
-loss = -mean(log(probs(target_ind))) + 0.5*reg*sum(sum(W.*W));
+loss = -mean(log(probs(target_ind)));
 
 % compute gradients
 dscores = probs;
 dscores(target_ind) = dscores(target_ind) - 1;
 dscores = dscores / N;
 
-dW = dscores*X' + reg*W;
+% dW = dscores*X' + reg*W;
 
 
 

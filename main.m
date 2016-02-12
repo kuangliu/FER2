@@ -1,1 +1,5 @@
-[W, loss_history] = train(W, X, y_train, opts);
+function varargout = main(varargin)
+    varargout{1} = 1;
+    varargout{2} = 1;
+    
+end

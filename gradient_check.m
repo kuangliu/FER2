@@ -6,11 +6,11 @@ function gradient_check(W, dW_analytic, X, y)
     for i = 1:num_checks
         W1 = double(W);
         W1(ind(i)) = W1(ind(i)) + h;
-        loss1 = softmax_loss(W1, X, y, 0);    
+        loss1 = svm_loss(W1, X, y, 0);    
         
         W2 = double(W);
         W2(ind(i)) = W2(ind(i)) - h;
-        loss2 = softmax_loss(W2, X, y, 0);    
+        loss2 = svm_loss(W2, X, y, 0);    
         
         dW_numerical = (loss1 - loss2) / (2 * h);
         dW_target = dW_analytic(ind(i));

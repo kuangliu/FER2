@@ -1,18 +1,27 @@
-function [loss, dscores] = svm_loss(scores, y)
+function [loss, dW] = svm_loss_linear(W, X, y, reg)
 %SVM_LOSS function
 %
 % Inputs have dimension D, there are C classes, and operate on minibatches
 % of N examples.
 %
 % Inputs:
-% - scores: [C, N]
+% - W: [C, D]
+% - X: [D, N]
 % - y: [1, N]   make sure y is 1 based
+% - reg: (float) regularization strength
 %
 % Returns a tuple of:
 % - loss: single number of the svm loss
-% - dscores: gradient with respect to scores
+% - dW: gradient with respect to W, same shape as W
 
-N = size(scores, 2);   % N samples
+if ~isa(X, 'single')
+    X = single(X);
+end
+
+[~, N] = size(X);   % N samples
+
+% compute scores
+scores = W * X;     % [C, N]
 
 % Index trick:
 % To get the score of the target label, we first convert subscript to
@@ -29,8 +38,8 @@ hinge_loss = max(0, margins);
 % set the loss of target label to 0
 hinge_loss(target_ind) = 0;
 
-% svm_loss = margin_sum / N, no regularization yet
-loss = sum(sum(hinge_loss)) / N;
+% loss = margin sum / N + regularization
+loss = sum(sum(hinge_loss)) / N + 0.5*reg*sum(sum(W.*W));
 
 % dscores = dloss/dscores
 dscores = zeros(size(scores),'like',scores);
@@ -40,6 +49,6 @@ dscores = dscores / single(N);
 
 % scores = W * X + 0.5*reg*W^2
 % => dW = dscores * X + reg*W
-% dW = dscores*X' + reg*W;
+dW = dscores*X' + reg*W;
 
 

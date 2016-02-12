@@ -1,8 +1,8 @@
 function [W, loss_history] = train(W, X, y, opts)
 %TRAIN the model using SGD.
 loss_history = zeros(opts.num_iters,1);
-m = zeros(size(W),'like',W);    % cache for Adam update
-v = zeros(size(W),'like',W);
+m = zeros(size(W), 'like', W);    % cache for Adam update
+v = zeros(size(W), 'like', W);
 
 for it = 1:opts.num_iters
     % sample a batch
@@ -10,9 +10,14 @@ for it = 1:opts.num_iters
     y_batch = y(batch_idx);
 
     % evaluate loss and gradient
-    [loss, dW] = softmax_loss(W, X_batch, y_batch, opts.reg);
-    loss_history(it) = loss;
+    [loss, dscores] = svm_loss(W*X_batch, y_batch);
+    
+    % add regularization term
+    loss_history(it) = loss + 0.5*opts.reg*sum(sum(W.*W));
 
+    % compute the local gradients, add regularization term here
+    dW = dscores*X_batch' + opts.reg*W;
+    
     % perform parameter update, we use Adam update
     beta1 = 0.9;
     beta2 = 0.995;
