@@ -17,14 +17,22 @@ layer_num = numel(net);
 
 loss_history = zeros(opts.num_iters, 1);
 
-ms = cell(1, layer_num);    % Adam update cache for each weighted layer
-vs = cell(1, layer_num);
-
-% m = zeros(10, 3073, 'single');    % cache for Adam update
-% v = zeros(10, 3073, 'single');
-
 W_sum = 0;  % weight square sum for regularizaiotn
 
+% Cache for Adam Update. 
+% We first go through all the layers, if it's a weigted layer, then we 
+% initialize ms&vs to zero
+ms = cell(1, layer_num);
+vs = cell(1, layer_num);
+for layer_ind = 1:layer_num
+    layer = net{layer_ind};
+    if strcmp(layer.type, 'fc') || strcmp(layer.type, 'conv')   % weighted layer, init ms&vs
+        ms{layer_ind} = zeros(size(layer.W), 'single');    
+        vs{layer_ind} = zeros(size(layer.W), 'single');
+    end
+end
+
+% Training main loop
 for it = 1:opts.num_iters
     %  ----- sample a batch -----
     [X_batch, batch_idx] = datasample(X, opts.batch_size, 2, 'Replace', false);
@@ -38,14 +46,9 @@ for it = 1:opts.num_iters
 
         switch layer.type
             case 'fc'
-                if isempty(ms{layer_ind})  % if not initialized, set them to zero 
-                    ms{layer_ind} = zeros(size(layer.W), 'single');    % cache for Adam update
-                    vs{layer_ind} = zeros(size(layer.W), 'single');
-                end
-
                 net{layer_ind}.X = X_batch;      % save input for BP usage
                 X_batch = fc_layer(layer.W, X_batch);   % forward X_batch through FC layer
-                W_sum = W_sum + sum(sum(layer.W .* layer.W));
+                W_sum = W_sum + sum(sum(layer.W .* layer.W));   % add up all the sum of squared weights for regularization
         end
     end
     
@@ -85,10 +88,4 @@ for it = 1:opts.num_iters
 end
 
 
-
-
-
-
-
-end
 
