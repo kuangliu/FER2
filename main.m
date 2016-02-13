@@ -1,5 +1,2 @@
-function varargout = main(varargin)
-    varargout{1} = 1;
-    varargout{2} = 1;
-    
-end
+net = build_net();
+[net, loss_history] = train_net(X, y_train, net, opts);

@@ -85,6 +85,7 @@ for it = 1:opts.num_iters
                 net{layer_ind}.W = layer.W - opts.lr*mb./(sqrt(vb) + 1e-7);
         end
     end
+    
 end
 
 
