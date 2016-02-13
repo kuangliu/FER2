@@ -1,4 +1,4 @@
-function predict(net, X, y_target)
+function accuracy = predict(net, X, y_target)
 %PREDICT the accuracy of trained network
 
 layer_num = numel(net);
@@ -16,6 +16,6 @@ end
 [~, y_pred] = max(X);
 
 num_correct = sum(y_pred==y_target);
-fprintf('correct/total = %d/%d = %f\n', num_correct, size(X, 2), num_correct/size(X, 2));
+accuracy = num_correct/size(X, 2);
+fprintf('correct/total = %d/%d = %f\n', num_correct, size(X, 2), accuracy);
     
-

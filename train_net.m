@@ -1,4 +1,4 @@
-function [net, loss_history] = train_net(X, y, net, opts)
+function [net, loss_history] = train_net(net, X, y, X_val, y_val, opts)
 %TRAIN_NET Train the network based on the given training data X.
 % Inputs:
 %   - X: training data [D, N]
@@ -49,13 +49,17 @@ for it = 1:opts.num_iters
                 net{layer_ind}.X = X_batch;      % save input for BP usage
                 X_batch = fc_layer(layer.W, X_batch);   % forward X_batch through FC layer
                 W_sum = W_sum + sum(sum(layer.W .* layer.W));   % add up all the sum of squared weights for regularization
+            
+            case 'relu'
+                net{layer_ind}.X = X_batch;     % save input for BP usage
+                X_batch = relu_layer(X_batch);
         end
     end
     
     %  ----- compute loss -----
     % grad is the output gradient, and we pass it back through the network
     % in the end, X_batch = final scores
-    [loss, grad] = svm_loss(X_batch, y_batch);
+    [loss, grad] = softmax_loss(X_batch, y_batch);
     
     % add regularization term
     loss_history(it) = loss + 0.5*opts.reg*W_sum;
@@ -83,9 +87,19 @@ for it = 1:opts.num_iters
                 mb = ms{layer_ind} ./ (1 - beta1^it);
                 vb = vs{layer_ind} ./ (1 - beta2^it);
                 net{layer_ind}.W = layer.W - opts.lr*mb./(sqrt(vb) + 1e-7);
+            
+            case 'relu'
+                grad = relu_layer(layer.X, grad);
         end
     end
     
+    % validation
+    if mod(it, 100) == 0
+        val_acy = predict(net, X_val, y_val);
+        h = animatedline;
+        addpoints(h, it/100, val_acy);
+        drawnow limitrate
+    end
 end
 
 

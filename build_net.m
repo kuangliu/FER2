@@ -2,7 +2,7 @@ function net = build_net()
 %BUILD_NET build the network layer by layer
 
 C = 10;     % C classes
-D = 3073;   % D dimension
+D = 3073;   % D dimension, with bias
 
 net = {};
 
@@ -13,7 +13,8 @@ net = {};
 %   - X: input data, which cache for BP usage. And it added in training
 %   forward process
 fc1.type = 'fc';
-fc1.W = randn(C, D, 'single') / sqrt(D);
+% fc1.W = randn(C, D, 'single') / sqrt(D)       % init weights & bias the same
+fc1.W = [randn(C, D-1, 'single') / sqrt(D-1), zeros(C, 1)]; % init bias term to 0
 net{end+1} = fc1;   % add to the network
 
     
