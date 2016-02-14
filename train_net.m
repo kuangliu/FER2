@@ -6,7 +6,7 @@ function [net, loss_history] = train_net(net, X, y, X_val, y_val, opts)
 %   - opts: training options with:
 %       - opts.lr: learning rat
 %       - opts.reg: regularization strength
-%       - opts.num_iters: # of iterations
+%       - opts.num_epochs
 %       - opts.batch_size             
 %
 % Outputs:
@@ -14,10 +14,8 @@ function [net, loss_history] = train_net(net, X, y, X_val, y_val, opts)
 %   - loss_history: recording the loss after each iteration [num_iters, 1]
 
 layer_num = numel(net);
+N = size(X, 2);
 
-loss_history = zeros(opts.num_iters, 1);
-
-W_sum = 0;  % weight square sum for regularizaiotn
 
 % Cache for Adam Update. 
 % We first go through all the layers, if it's a weigted layer, then we 
@@ -32,8 +30,15 @@ for layer_ind = 1:layer_num
     end
 end
 
+num_per_epoch = N / opts.batch_size;
+num_iters = num_per_epoch * opts.num_epochs;
+loss_history = zeros(num_iters, 1);
+
+W_sum = 0;  % weight square sum for regularizaiotn
+h = animatedline;   % draw lines for validation accuracy
+
 % Training main loop
-for it = 1:opts.num_iters
+for it = 1:num_iters
     %  ----- sample a batch -----
     [X_batch, batch_idx] = datasample(X, opts.batch_size, 2, 'Replace', false);
     y_batch = y(batch_idx);
@@ -64,7 +69,7 @@ for it = 1:opts.num_iters
     % add regularization term
     loss_history(it) = loss + 0.5*opts.reg*W_sum;
     
-    fprintf('#%d/%d: loss=%.4f\n', it, opts.num_iters, loss)
+    fprintf('#%d/%d: loss=%.4f\n', it, num_iters, loss)
     
     %  ----- backward pass -----
     %  compute local gradients
@@ -94,10 +99,9 @@ for it = 1:opts.num_iters
     end
     
     % validation
-    if mod(it, 100) == 0
+    if mod(it, num_per_epoch) == 0
         val_acy = predict(net, X_val, y_val);
-        h = animatedline;
-        addpoints(h, it/100, val_acy);
+        addpoints(h, it/num_per_epoch, val_acy);
         drawnow limitrate
     end
 end

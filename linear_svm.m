@@ -37,8 +37,8 @@ C = 10;                     % C classes
 % Prepare the training parameters
 opts.lr = 0.001;                    % learning rat
 opts.reg = 0; %0.00001;              % regularization strength
-opts.num_iters = 2000;               % # of iterations
-opts.batch_size = 256;               
+opts.batch_size = 200;               
+opts.num_epochs = 200;
 
 % Xavier initialization W
 W = randn(C, D, 'like', X_train) / sqrt(D);
