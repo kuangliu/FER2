@@ -11,7 +11,7 @@ for layer_ind = 1:layer_num
         case 'fc'
             X = fc_layer(layer.W, X);
         case 'bn'
-            X = bn(X);
+            X = bn_layer(X, layer.gamma, layer.beta);
         case 'relu'
             X = relu_layer(X);
     end

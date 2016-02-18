@@ -68,7 +68,7 @@ for it = 1:num_iters
             
             case 'bn'
                 net{layer_ind}.X = X_batch;
-                X_batch = bn(X_batch);
+                [X_batch, net{layer_ind}.X_norm] = bn_layer(X_batch, layer.gamma, layer.beta);
                 
             case 'relu'
                 % save input for BP usage
@@ -114,7 +114,10 @@ for it = 1:num_iters
                 net{layer_ind}.W = layer.W - opts.lr*mb./(sqrt(vb) + 1e-7);
             
             case 'bn'
-                grad = bn(layer.X, grad);
+                [grad, dGamma, dBeta] = bn_layer(layer.X, layer.X_norm, layer.gamma, grad);
+                % update gamma & beta
+                net{layer_ind}.gamma = net{layer_ind}.gamma - 0.01*dGamma;
+                net{layer_ind}.beta = net{layer_ind}.beta - 0.01*dBeta;
                 
             case 'relu'
                 grad = relu_layer(layer.X, grad);

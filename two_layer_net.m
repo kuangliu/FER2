@@ -27,7 +27,9 @@ net{end+1} = fc1;   % add to the network
 
 % BN layer
 bn1.type = 'bn';
-%net{end+1} = bn1;
+bn1.gamma = rand(H,1); % uniform distribution
+bn1.beta = zeros(H,1);
+net{end+1} = bn1;
 
 % ReLU layer
 relu1.type = 'relu';

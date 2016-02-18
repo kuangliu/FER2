@@ -1,15 +1,21 @@
-function varargout = bn(X, varargin)
-%BN 此处显示有关此函数的摘要
-%   此处显示详细说明
+function y = bn(X, varargin)
+%BN Batch Normalization without parameters gamma&beta
+%
+% Forward: y = bn(X) it computes
+%       y = (X-mean(X))/std(X)
+%
+% Backward: dX = bn(X, dy)
+%       compute input gradient dX given output gradient dy
+%       
+
     
 if nargin == 1 || isempty(varargin)
-    % forward, output X_norm = (X-mean(X))/std(X)
+    % forward pass: y = (X-mean(X))/std(X)
     X_center = bsxfun(@minus, X, mean(X,2));
-    X_norm = bsxfun(@rdivide, X_center, std(X,1,2));
-    varargout{1} = X_norm;
+    y = bsxfun(@rdivide, X_center, std(X,1,2));
 
 else
-    N = size(X,2);
+    % backward pass: compute dX given dy
     VarX = var(X,1,2);
     X_center = bsxfun(@minus, X, mean(X,2));
     
@@ -22,10 +28,9 @@ else
     dEX_tmp = bsxfun(@rdivide, dX_norm, VarX.^0.5);
     dEX = -sum(dEX_tmp,2);
     
+    N = size(X,2);
     t = dEX_tmp + 2/N*bsxfun(@times, X_center, dVarX);
-    dX = bsxfun(@plus, t, dEX/N);
+    y = bsxfun(@plus, t, dEX/N); % y = dX
     
-    varargout{1} = dX;
-
 end
 
