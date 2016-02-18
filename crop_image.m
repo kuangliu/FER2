@@ -7,13 +7,13 @@ function sub_imgs = crop_image(img, h, w, n)
 % Output:
 %   - sub_imgs: cropped images sized [h, w, C, n]
 
-[H, W, C] = size(img);
-
-assert(H>=h && W>=w);
 assert(ndims(img)==3);
+
+[H, W, C] = size(img);
 
 deltaX = W-w;
 deltaY = H-h;
+assert(deltaX>=0 && deltaY>=0);
 
 sub_imgs = zeros(h,w,C,n,'like',img);
 for i = 1:n

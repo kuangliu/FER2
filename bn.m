@@ -4,22 +4,27 @@ function varargout = bn(X, varargin)
     
 if nargin == 1 || isempty(varargin)
     % forward, output X_norm = (X-mean(X))/std(X)
-    X_center = bsxfun(@minus, X, mean(X));
-    X_norm = bsxfun(@rdivide, X_center, std(X));
+    X_center = bsxfun(@minus, X, mean(X,2));
+    X_norm = bsxfun(@rdivide, X_center, std(X,1,2));
     varargout{1} = X_norm;
 
 else
-    D = size(X,1);
-    
-    dEX = ones(size(X))/D;  % dEX is dEX/dX, same size as X
-    X_center = bsxfun(@minus, X, mean(X));
-    
-    VarX = var(X);
-    dVarX = 2/D * X_center.*(1-dEX); % dVarX is dVarx/dX, same size as X
+    N = size(X,2);
+    VarX = var(X,1,2);
+    X_center = bsxfun(@minus, X, mean(X,2));
     
     dy = varargin{1};
-    t = -0.5*bsxfun(@rdivide, X_center.*dVarX, VarX.^1.5);
-    dX = dy .* (t + bsxfun(@rdivide, 1-dEX, VarX.^0.5));
+    dX_norm = dy;   % TODO: dXnorm = dy * r;
+    
+    dVarX = -0.5 * dX_norm .* bsxfun(@rdivide, X_center, VarX.^1.5);
+    dVarX = sum(dVarX,2);
+    
+    dEX_tmp = bsxfun(@rdivide, dX_norm, VarX.^0.5);
+    dEX = -sum(dEX_tmp,2);
+    
+    t = dEX_tmp + 2/N*bsxfun(@times, X_center, dVarX);
+    dX = bsxfun(@plus, t, dEX/N);
+    
     varargout{1} = dX;
 
 end

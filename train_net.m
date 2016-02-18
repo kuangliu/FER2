@@ -13,6 +13,8 @@ function [best_net, loss_history] = train_net(net, X, y, X_val, y_val, opts)
 %   - net: network after training with weight updated
 %   - loss_history: recording the loss after each iteration [num_iters, 1]
 
+clc; close all;
+
 layer_num = numel(net);
 N = size(X, 2);
 

@@ -27,7 +27,7 @@ net{end+1} = fc1;   % add to the network
 
 % BN layer
 bn1.type = 'bn';
-net{end+1} = bn1;
+%net{end+1} = bn1;
 
 % ReLU layer
 relu1.type = 'relu';
