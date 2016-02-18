@@ -14,7 +14,6 @@ for it = 1:opts.num_iters
     a = fc_layer(W, X_batch);
     [loss, dscores] = svm_loss(a, y_batch);
     
-    
     % add regularization term
     loss_history(it) = loss + 0.5*opts.reg*sum(sum(W.*W));
 

@@ -16,7 +16,7 @@ function varargout = fc_layer(W, X, varargin)
 %       - backward pass: local gradients dW & dX
 
 
-if nargin <= 2 || isempty(varargin)
+if nargin == 2 || isempty(varargin)
     % forward pass, compute activations y
     varargout{1} = W * X;
 else

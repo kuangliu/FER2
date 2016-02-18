@@ -10,6 +10,8 @@ for layer_ind = 1:layer_num
     switch layer.type
         case 'fc'
             X = fc_layer(layer.W, X);
+        case 'bn'
+            X = bn(X);
         case 'relu'
             X = relu_layer(X);
     end
