@@ -22,15 +22,16 @@ X_val = bsxfun(@minus, X_val, mean_img);
 % Normalize
 % If you do normalize after add bias term, remember reset them to 0 cause
 % the bias has become NaN after @rdivide
-X = bsxfun(@rdivide, X_train, std(X_train));
+X = bsxfun(@rdivide, X_train, std(X_train,1,2));
+X_val = bsxfun(@rdivide, X_val, std(X_train,1,2));
 y = y_train;
 
 % Bias trick. Stack bias into the data.
 %   Pro: We don't need to worry about bias anymore. 
 %        Bias & weights are the same.
 %   Cons: We cannot update weights&bias separately (maybe it's good...)
-X = [X; zeros(1, size(X, 2))];                    % X: 3073*8000
-X_val = [X_val; zeros(1, size(X_val, 2))];        % X_val: 3073*2000
+X = [X; zeros(1,size(X,2))];                    % X: 3073*8000
+X_val = [X_val; zeros(1,size(X_val,2))];        % X_val: 3073*2000
 
 C = 10;               % C classes
 [D, N] = size(X);     % N samples, each of D dimension
@@ -40,7 +41,7 @@ opts.lr = 0.001;                    % learning rat
 opts.reg = 0.00001;                 % regularization strength
 opts.batch_size = 200;           
 opts.num_epochs = 100;
-opts.num_iters = 4000;
+opts.num_iters = 2000;
 
 % Xavier initialization W
 W = randn(C, D, 'like', X_train) / sqrt(D);

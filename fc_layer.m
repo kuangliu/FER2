@@ -8,12 +8,12 @@ function varargout = fc_layer(W, X, varargin)
 % Inputs:
 %   - W: weights [C, D]
 %   - X: input data [D, N]
-%   - varargin: output gradient dy, when we perform forward pass, it's null
+%   - varargin: output gradient dy, when it performs forward pass, it's null
 %
 % Outputs:
 %   - varargout
-%       - forward pass: activations y = W * X
-%       - backward pass: local gradients dW & dX
+%       - forward pass: return activations y = W * X
+%       - backward pass: return local gradients dW & dX
 
 
 if nargin == 2 || isempty(varargin)
