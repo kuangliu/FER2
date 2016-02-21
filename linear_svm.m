@@ -37,7 +37,7 @@ C = 10;               % C classes
 [D, N] = size(X);     % N samples, each of D dimension
 
 % Prepare the training parameters
-opts.lr = 0.01;                     % learning rat
+opts.lr = 0.001;                     % learning rat
 opts.reg = 0.00001;                 % regularization strength
 opts.batch_size = 200;           
 opts.num_epochs = 25;

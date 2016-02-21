@@ -21,13 +21,22 @@ N = size(X, 2);
 % Cache for Adam Update. 
 % first go through all the layers, if it's a weigted layer, 
 % then initialize ms&vs to zero
-ms = cell(1, layer_num);
-vs = cell(1, layer_num);
+states = cell(1, layer_num);
 for layer_ind = 1:layer_num
     layer = net{layer_ind};
-    if strcmp(layer.type, 'fc') || strcmp(layer.type, 'conv')    % weighted layer, init ms&vs
-        ms{layer_ind} = zeros(size(layer.W), 'single');    
-        vs{layer_ind} = zeros(size(layer.W), 'single');
+    
+    states{layer_ind}.t = 0;    
+    if strcmp(layer.type, 'fc') || strcmp(layer.type, 'conv')   % weighted layer, init state
+        states{layer_ind}.m = zeros(size(layer.W), 'single');    
+        states{layer_ind}.v = zeros(size(layer.W), 'single');
+        
+    elseif strcmp(layer.type, 'bn')
+        % as params gamma&beta for bn layer are sized [D,1]
+        % so we can cat them together(now sized [D,2]) to update
+        D = size(layer.gamma, 1);
+        states{layer_ind}.m = zeros(D, 2, 'single');    
+        states{layer_ind}.v = zeros(D, 2, 'single');
+        
     end
 end
 
@@ -108,21 +117,27 @@ for it = 1:num_iters
                 % add regularization term
                 dW = dW + opts.reg*layer.W;
                 
-                % perform Adam Update
-                beta1 = 0.9;
-                beta2 = 0.995;
-                ms{layer_ind} = beta1 * ms{layer_ind} + (1-beta1) * dW;
-                vs{layer_ind} = beta2 * vs{layer_ind} + (1-beta2) * (dW.*dW);
-                mb = ms{layer_ind} ./ (1 - beta1^it);
-                vb = vs{layer_ind} ./ (1 - beta2^it);
-                net{layer_ind}.W = layer.W - opts.lr*mb./(sqrt(vb) + 1e-7);
+                % Adam Update
+                [net{layer_ind}.W, states{layer_ind}] = ...
+                    adam_update(layer.W, dW, opts.lr, states{layer_ind});
             
             case 'bn'
                 layer.mode = 'train';
                 [grad, dGamma, dBeta] = bn_layer(layer, grad);
-                % Vanilla Update gamma & beta
-                net{layer_ind}.gamma = net{layer_ind}.gamma - 0.01*dGamma;
-                net{layer_ind}.beta = net{layer_ind}.beta - 0.01*dBeta;
+                % Adam Update gamma & beta
+                % cat gamma & beta together sized [D,2]
+                params = [layer.gamma, layer.beta];
+                dParams = [dGamma, dBeta];
+                
+                % perform Adam update
+                [params, states{layer_ind}] = ...
+                    adam_update(params, dParams, opts.lr, states{layer_ind});
+                
+                % split params back to gamma & beta
+                net{layer_ind}.gamma = params(:,1);
+                net{layer_ind}.beta = params(:,2);
+%                 net{layer_ind}.gamma = net{layer_ind}.gamma - opts.lr*dGamma;
+%                 net{layer_ind}.beta = net{layer_ind}.beta - opts.lr*dBeta;
                 
             case 'relu'
                 grad = relu_layer(layer.X, grad);
