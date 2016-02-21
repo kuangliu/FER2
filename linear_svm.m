@@ -43,11 +43,15 @@ opts.batch_size = 200;
 opts.num_epochs = 100;
 opts.num_iters = 2000;
 
-% Xavier initialization W
-W = randn(C, D, 'like', X_train) / sqrt(D);
 
+net = two_layer_net();
+[best_net, loss_history] = train_net(net, X, y, X_val, y_val, opts);
+
+
+% Xavier initialization W
+%W = randn(C, D, 'like', X_train) / sqrt(D);
 % Train the model
-[W, loss_history] = train_linear(W, X, y_train, opts);
+%[W, loss_history] = train_linear(W, X, y_train, opts);
 
 
 

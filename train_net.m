@@ -67,8 +67,10 @@ for it = 1:num_iters
                 W_sum = W_sum + sum(sum(layer.W .* layer.W));
             
             case 'bn'
+                net{layer_ind}.mode = 'train';
                 net{layer_ind}.X = X_batch;
-                [X_batch, net{layer_ind}.X_norm] = bn_layer(X_batch, layer.gamma, layer.beta);
+                % add running mean/std to bn layer
+                [X_batch, net{layer_ind}] = bn_layer(net{layer_ind});
                 
             case 'relu'
                 % save input for BP usage
@@ -114,8 +116,9 @@ for it = 1:num_iters
                 net{layer_ind}.W = layer.W - opts.lr*mb./(sqrt(vb) + 1e-7);
             
             case 'bn'
-                [grad, dGamma, dBeta] = bn_layer(layer.X, layer.X_norm, layer.gamma, grad);
-                % update gamma & beta
+                layer.mode = 'train';
+                [grad, dGamma, dBeta] = bn_layer(layer, grad);
+                % Vanilla Update gamma & beta
                 net{layer_ind}.gamma = net{layer_ind}.gamma - 0.01*dGamma;
                 net{layer_ind}.beta = net{layer_ind}.beta - 0.01*dBeta;
                 
