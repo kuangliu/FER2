@@ -1,5 +1,5 @@
 % Linear Model: y = W*X, using SGD to optimize.
-load 'data.mat'
+%load 'data.mat'
 
 % Convert 'uint8' to 'single'
 X_train = single(X_train);      % X_train: 3072*8000
@@ -14,7 +14,7 @@ num_classes = numel(classes);
 
 % Zero mean
 mean_img = mean(X_train, 2);
-imshow(reshape(uint8(mean_img), 32, 32, 3))
+%imshow(reshape(uint8(mean_img), 32, 32, 3))
 
 X_train = bsxfun(@minus, X_train, mean_img);
 X_val = bsxfun(@minus, X_val, mean_img);
@@ -37,16 +37,14 @@ C = 10;               % C classes
 [D, N] = size(X);     % N samples, each of D dimension
 
 % Prepare the training parameters
-opts.lr = 0.001;                    % learning rat
+opts.lr = 0.01;                     % learning rat
 opts.reg = 0.00001;                 % regularization strength
 opts.batch_size = 200;           
-opts.num_epochs = 100;
-opts.num_iters = 2000;
+opts.num_epochs = 25;
+opts.num_iters = 1000;
 
-
-net = two_layer_net();
+net = build_net();
 [best_net, loss_history] = train_net(net, X, y, X_val, y_val, opts);
-
 
 % Xavier initialization W
 %W = randn(C, D, 'like', X_train) / sqrt(D);

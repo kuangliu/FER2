@@ -13,7 +13,7 @@ function [best_net, loss_history] = train_net(net, X, y, X_val, y_val, opts)
 %   - net: network after training with weight updated
 %   - loss_history: recording the loss after each iteration [num_iters, 1]
 
-clc; close all;
+% clc; close all;
 
 layer_num = numel(net);
 N = size(X, 2);
@@ -90,7 +90,9 @@ for it = 1:num_iters
     % add regularization term
     loss_history(it) = loss + 0.5*opts.reg*W_sum;
     
-    fprintf('#%d/%d: loss=%.4f\n', it, num_iters, loss)
+    epoch_ind = floor((it-1)/num_per_epoch) + 1;
+    fprintf('epoch %d/%d, iteration %d/%d, loss=%.4f, lr=%.4f\n', ...
+                epoch_ind, opts.num_epochs, it, num_iters, loss, opts.lr)
     
     % ------------------------------------------------------------------- 
     %                                                       backward pass
@@ -128,15 +130,21 @@ for it = 1:num_iters
         end
     end
     
-    % validation
-    if mod(it, num_per_epoch) == 0
+    % End of an epoch
+    if mod(it, num_per_epoch) == 0 
+        % 1. weight decay
+        if mod(epoch_ind, 30) == 0
+            % every 30 epochs, lr decrease to 1/10
+            opts.lr = opts.lr * 0.1;
+        end
+        
+        % 2. validation
         val_acy = predict(net, X_val, y_val);
         if val_acy > best_val_acy
             best_val_acy = val_acy;
             best_net = net;
         end
-        % plot val_acy
-        addpoints(h, it/num_per_epoch, val_acy);
+        addpoints(h, epoch_ind, val_acy); % plot val_acy
         drawnow limitrate
     end
 end

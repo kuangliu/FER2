@@ -1,3 +1,4 @@
+function main()
 clc;
 
 N = 10;
@@ -13,12 +14,12 @@ W = randn(C, D, 'like', X) / sqrt(D);
 
 a = fc_layer(W, X);
 
-layer.gamma = rand(C,1);
-layer.beta = zeros(C,1);
+layer.gamma = rand(C, 1);
+layer.beta = zeros(C, 1);
 layer.X = a;
 layer.mode = 'train';
-layer.running_mean = zeros(C,1);
-layer.running_std = ones(C,1);
+layer.running_mean = zeros(C, 1);
+layer.running_std = ones(C, 1);
 [b, layer] = bn_layer(layer);
 
 [loss, grad] = svm_loss(b, y);
