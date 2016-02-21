@@ -40,6 +40,7 @@ for layer_ind = 1:layer_num
     end
 end
 
+
 num_per_epoch = N / opts.batch_size;
 num_iters = num_per_epoch * opts.num_epochs;
 loss_history = zeros(num_iters, 1);
