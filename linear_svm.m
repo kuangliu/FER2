@@ -37,7 +37,7 @@ C = 10;               % C classes
 [D, N] = size(X);     % N samples, each of D dimension
 
 % Prepare the training parameters
-opts.lr = 0.001;                     % learning rat
+opts.lr = 0.001;                    % learning rat
 opts.reg = 0.00001;                 % regularization strength
 opts.batch_size = 200;           
 opts.num_epochs = 25;
@@ -48,6 +48,7 @@ net = build_net();
 
 % Xavier initialization W
 %W = randn(C, D, 'like', X_train) / sqrt(D);
+
 % Train the model
 %[W, loss_history] = train_linear(W, X, y_train, opts);
 

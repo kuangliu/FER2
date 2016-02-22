@@ -24,6 +24,16 @@ function varargout = bn_layer(layer, varargin)
 if nargin == 1 || isempty(varargin)
     % forward pass
     X = layer.X;
+    
+    % initialize params for the first time
+    if ~isfield(layer, 'gamma')
+        D = size(X,1);
+        layer.gamma = rand(D, 1); % init scale param
+        layer.beta = zeros(D, 1); % shift param
+        layer.running_mean = zeros(D, 1);
+        layer.running_std = ones(D, 1);
+    end
+    
     gamma = layer.gamma;
     beta = layer.beta;
     mode = layer.mode; % train/test

@@ -27,10 +27,6 @@ net{end+1} = fc1;   % add to the network
 
 % BN layer
 bn1.type = 'bn';
-bn1.gamma = rand(H, 1); % scale param
-bn1.beta = zeros(H, 1); % shift param
-bn1.running_mean = zeros(H, 1); % keep the weighted mean&std of each training epoch
-bn1.running_std = ones(H, 1);
 net{end+1} = bn1;
 
 % ReLU layer

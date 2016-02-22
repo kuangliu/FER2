@@ -1,4 +1,4 @@
-function [best_net, loss_history] = train_net(net, X, y, X_val, y_val, opts)
+function [best_net, info] = train_net(net, X, y, X_val, y_val, opts)
 %TRAIN_NET Train the network based on the given training data X.
 % Inputs:
 %   - X: training data [D, N]
@@ -10,60 +10,44 @@ function [best_net, loss_history] = train_net(net, X, y, X_val, y_val, opts)
 %       - opts.batch_size             
 %
 % Outputs:
-%   - net: network after training with weight updated
-%   - loss_history: recording the loss after each iteration [num_iters, 1]
+%   - best_net: network with best validation accuracy
+%   - info containing
+%       - train_losses
+%       - val_losses
+%       - val_accuracies
 
-% clc; close all;
 
 layer_num = numel(net);
 N = size(X, 2);
 
-% Cache for Adam Update. 
-% first go through all the layers, if it's a weigted layer, 
-% then initialize ms&vs to zero
-states = cell(1, layer_num);
-for layer_ind = 1:layer_num
-    layer = net{layer_ind};
-    
-    states{layer_ind}.t = 0;    
-    if strcmp(layer.type, 'fc') || strcmp(layer.type, 'conv')   % weighted layer, init state
-        states{layer_ind}.m = zeros(size(layer.W), 'single');    
-        states{layer_ind}.v = zeros(size(layer.W), 'single');
-        
-    elseif strcmp(layer.type, 'bn')
-        % as params gamma&beta for bn layer are sized [D,1]
-        % so we can cat them together(now sized [D,2]) to update
-        D = size(layer.gamma, 1);
-        states{layer_ind}.m = zeros(D, 2, 'single');    
-        states{layer_ind}.v = zeros(D, 2, 'single');
-        
-    end
-end
-
-
 num_per_epoch = N / opts.batch_size;
 num_iters = num_per_epoch * opts.num_epochs;
-loss_history = zeros(num_iters, 1);
+
+% info
+info.train_losses = zeros(num_iters, 1);
+info.val_losses = zeros(opts.num_epochs, 1);
+info.val_accuracies = zeros(opts.num_epochs, 1);
 
 W_sum = 0;  % weight square sum for regularizaiotn
-h = animatedline;  % for plotting validation accuracy
-
+states = cell(1, layer_num); % Adam Update status
 best_net = {};  % save the net with best val_acy
-best_val_acy = 0;  % best validation accuracy
 
-% Main loop of training
+%--------------------------------------------------------------------------
+%                            Training Main Loop
+%--------------------------------------------------------------------------
+
 for it = 1:num_iters
-    %  ------------------------------------------------------------------- 
+    %  --------------------------------------------------------------------
     %                                                       sample a batch
-    %  ------------------------------------------------------------------- 
+    %  --------------------------------------------------------------------
     [X_batch, batch_idx] = datasample(X, opts.batch_size, 2, 'Replace', false);
     y_batch = y(batch_idx);
     % X_batch = X;
     % y_batch = y;
     
-    % ------------------------------------------------------------------- 
+    % --------------------------------------------------------------------- 
     %                                                        forward pass
-    % ------------------------------------------------------------------- 
+    % --------------------------------------------------------------------- 
     for layer_ind = 1:layer_num
         layer = net{layer_ind};
 
@@ -90,23 +74,23 @@ for it = 1:num_iters
         end
     end
     
-    % ------------------------------------------------------------------- 
+    % --------------------------------------------------------------------- 
     %                                             compute loss & gradient
-    % ------------------------------------------------------------------- 
+    % --------------------------------------------------------------------- 
     % 'grad' is the output gradient, pass it back through the network
     % in the end: X_batch = final_scores
     [loss, grad] = svm_loss(X_batch, y_batch);
     
     % add regularization term
-    loss_history(it) = loss + 0.5*opts.reg*W_sum;
+    info.train_losses(it) = loss + 0.5*opts.reg*W_sum;
     
     epoch_ind = floor((it-1)/num_per_epoch) + 1;
     fprintf('epoch %d/%d, iteration %d/%d, loss=%.4f, lr=%.4f\n', ...
                 epoch_ind, opts.num_epochs, it, num_iters, loss, opts.lr)
     
-    % ------------------------------------------------------------------- 
+    % --------------------------------------------------------------------- 
     %                                                       backward pass
-    % ------------------------------------------------------------------- 
+    % --------------------------------------------------------------------- 
     for layer_ind = layer_num:-1:1
         layer = net{layer_ind};
 
@@ -125,20 +109,19 @@ for it = 1:num_iters
             case 'bn'
                 layer.mode = 'train';
                 [grad, dGamma, dBeta] = bn_layer(layer, grad);
+                
                 % Adam Update gamma & beta
-                % cat gamma & beta together sized [D,2]
+                % 1. cat gamma & beta together sized [D,2]
                 params = [layer.gamma, layer.beta];
                 dParams = [dGamma, dBeta];
                 
-                % perform Adam update
+                % 2. Adam update cated params
                 [params, states{layer_ind}] = ...
                     adam_update(params, dParams, opts.lr, states{layer_ind});
                 
-                % split params back to gamma & beta
+                % 3. split updated params back to gamma & beta
                 net{layer_ind}.gamma = params(:,1);
                 net{layer_ind}.beta = params(:,2);
-%                 net{layer_ind}.gamma = net{layer_ind}.gamma - opts.lr*dGamma;
-%                 net{layer_ind}.beta = net{layer_ind}.beta - opts.lr*dBeta;
                 
             case 'relu'
                 grad = relu_layer(layer.X, grad);
@@ -155,12 +138,9 @@ for it = 1:num_iters
         end
         
         % 2. validation
-        val_acy = predict(net, X_val, y_val);
-        if val_acy > best_val_acy
-            best_val_acy = val_acy;
-            best_net = net;
-        end
-        addpoints(h, epoch_ind, val_acy); % plot val_acy
+        [info.val_losses(epoch_ind), info.val_accuracies(epoch_ind)] = ...
+                            predict(net, X_val, y_val);
+        plot_info(info, epoch_ind)  % plot results
         drawnow limitrate
     end
 end
