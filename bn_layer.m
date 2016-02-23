@@ -1,8 +1,8 @@
 function varargout = bn_layer(layer, varargin)
-%BN_LAYER batch normalization layer with parameters gamma&beta
-% See the paper for more math details:
-% <Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift>
-%
+%BN_LAYER Batch normalization layer with parameters gamma&beta
+% implementation of papar:
+%       http://arxiv.org/pdf/1502.03167.pdf
+% 
 % Input X is sized [D, N], each column is a sample.
 %
 % Forward pass: it performs Unit Gaussian Normalization:

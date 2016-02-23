@@ -4,17 +4,18 @@ function [best_net, info] = train_net(net, X, y, X_val, y_val, opts)
 %   - X: training data [D, N]
 %   - net: network struct
 %   - opts: training options with:
-%       - opts.lr: learning rat
-%       - opts.reg: regularization strength
-%       - opts.num_epochs
-%       - opts.batch_size             
+%       - lr
+%       - reg
+%       - num_epochs
+%       - batch_size             
 %
 % Outputs:
 %   - best_net: network with best validation accuracy
-%   - info containing
+%   - info: training information of each epoch, containing:
 %       - train_losses
 %       - val_losses
 %       - val_accuracies
+%
 
 
 layer_num = numel(net);
@@ -27,13 +28,14 @@ num_iters = num_per_epoch * opts.num_epochs;
 info.train_losses = zeros(num_iters, 1);
 info.val_losses = zeros(opts.num_epochs, 1);
 info.val_accuracies = zeros(opts.num_epochs, 1);
+info.best_val_accuracy = 0;
 
 W_sum = 0;  % weight square sum for regularizaiotn
 states = cell(1, layer_num); % Adam Update status
 best_net = {};  % save the net with best val_acy
 
 %--------------------------------------------------------------------------
-%                            Training Main Loop
+%                            Training Starts
 %--------------------------------------------------------------------------
 
 for it = 1:num_iters
@@ -131,16 +133,23 @@ for it = 1:num_iters
     
     % End of an epoch
     if mod(it, num_per_epoch) == 0 
-        % 1. weight decay
+        % weight decay
         if mod(epoch_ind, 30) == 0
             % every 30 epochs, lr decrease to 1/10
             opts.lr = opts.lr * 0.1;
         end
         
-        % 2. validation
+        % validation
         [info.val_losses(epoch_ind), info.val_accuracies(epoch_ind)] = ...
                             predict(net, X_val, y_val);
-        plot_info(info, epoch_ind)  % plot results
+        
+        if info.val_accuracies(epoch_ind) > info.best_val_accuracy
+            info.best_val_accuracy = info.val_accuracies(epoch_ind);
+            best_net = net;
+        end
+        
+        % plot results
+        plot_info(info, epoch_ind)  
         drawnow limitrate
     end
 end
