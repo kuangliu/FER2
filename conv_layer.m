@@ -18,6 +18,9 @@ function [y, varargout] = conv_layer(X, layer, varargin)
 %   - dW: weight gradients sized [kH,kW,C,kN]
 %
 
+% use global variables for passing params easily
+global H W C N kH kW kN oH oW S P
+
 if ~isfield(layer, 'stride')
     layer.stride = 1;
 end
@@ -37,6 +40,11 @@ P = layer.pad;
 oH = floor((H+2*P-kH)/S+1);
 oW = floor((W+2*P-kW)/S+1);
 
+if ~isfield(layer, 'input_size')
+    layer.input_size = [H,W,C,N];
+    layer.output_size = [oH,oW,kN,N];
+end
+
 if nargin == 2 || isempty(varargin)
     %---------------------- forward pass ----------------------
     
@@ -50,7 +58,7 @@ if nargin == 2 || isempty(varargin)
     for i = 1:N
         im = X(:,:,:,i);
         % im2col
-        M = im2col(im, kH, kW, oH, oW, S);  % [kH*kW*C, oH*oW]
+        M = im2col(im);  % [kH*kW*C, oH*oW]
         layer.M(:,:,i) = M;                 % cache for BP use
         % convolution as matrix production
         a = M'*weights;                     % [oH*oW, kN]
@@ -62,6 +70,7 @@ if nargin == 2 || isempty(varargin)
     varargout{1} = layer;
 else
     %---------------------- backward pass ----------------------
+    
     dy = varargin{1};
     [oH,oW,kN,N] = size(dy);
     
@@ -76,23 +85,60 @@ else
         dW = dW + M * dyi;    % [kH*kW*C, kN]
         
         dM = weights * dyi';  % [kH*kW*C, oH*oW]
-        dX(:,:,:,i) = col2im(dM, H, W, C, kH, kW, oH, oW, S);     % dX: [H,W,C]
+        dX(:,:,:,i) = col2im(dM);     % dX: [H,W,C]
     end
     
     % output
     y = dX;
-    varargout{1} = dW;
+    varargout{1} = dW; 
 end
 
 
-function im = col2im(M, H, W, C, kH, kW, oH, oW, S)
-% convert output gradients M to input gradients X
+function M = im2col(im)
+% IM2COL convert a image to cols for convolution
+%
+% Inputs:
+%   - im: one image sized [H,W,C]
+%   - kH, kW: kernel size
+%   - oH, oW: output size
+%   - S: stride
+%
+% Output:
+%   - M: a matrix sized [kH*kW*C, N], N is the # of activation fields
+%
+
+global kH kW oH oW S
+
+C = size(im,3);
+
+M = zeros(kH*kW*C, oH*oW);
+i = 1;
+for w = 1:oW
+    x = 1+(w-1)*S;
+    for h = 1:oH
+        y = 1+(h-1)*S;
+        cube = im(y:y+kH-1, x:x+kW-1, :);
+        
+        M(:,i) = cube(:); % reshape to 1 column
+        i = i+1;
+    end
+end
+
+
+function im = col2im(M)
+% COL2IM: convert column gradients back to original image gradients
 %
 % Inputs:
 %   - M: sized [kH*kW*C, oH*oW]
 %   - H,W,C: im size
 %   - kH,kW: kernel size
 %   - S: stride
+%
+% Outputs:
+%   - im: the orignal image gradients, sized [H,W,C]
+%
+
+global H W C kH kW oH oW S
 
 im = zeros(H,W,C);
 i = 1;
@@ -106,36 +152,6 @@ for w = 1:oW
         
         % collect the gradients
         im(y:y+kH-1, x:x+kW-1, :) = im(y:y+kH-1, x:x+kW-1, :) + col;
-        i = i+1;
-    end
-end
-
-
-
-function M = im2col(im, kH, kW, oH, oW, S)
-% IM2COL convert a image to cols for convolution
-%
-% Inputs:
-%   - im: one image sized [H,W,C]
-%   - kH, kW: kernel size
-%   - oH, oW: output size
-%   - S: stride
-%
-% Output:
-%   - M: a matrix sized [kH*kW*C, N], N is the # of activation fields
-%
-
-C = size(im,3);
-
-M = zeros(kH*kW*C, oH*oW);
-i = 1;
-for w = 1:oW
-    x = 1+(w-1)*S;
-    for h = 1:oH
-        y = 1+(h-1)*S;
-        cube = im(y:y+kH-1, x:x+kW-1, :);
-        
-        M(:,i) = cube(:); % reshape to 1 column
         i = i+1;
     end
 end

@@ -5,7 +5,7 @@ if 2>1
 end
 
 t();
-a
+
 
 
 function t()

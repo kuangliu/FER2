@@ -19,7 +19,7 @@ a = reshape(a, [], 3);
 da = reshape(dscores, 3, 3, 3, 3);
 [dX, dW] = conv_layer(X, layer1, da);
 
-gradient_check(X, y, dX, layer)
+gradient_check(X, y, dW, layer1)
 
 
 
