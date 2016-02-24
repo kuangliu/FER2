@@ -5,11 +5,12 @@ layer_num = numel(net);
 
 % forward the net to compute the scores
 for layer_ind = 1:layer_num
-    layer = net{layer_ind};
+    type = net{layer_ind}.type;
     
-    switch layer.type
+    switch type
         case 'fc'
-            X = fc_layer(layer.W, X);
+            net{layer_ind}.X = X;
+            X = fc_layer(net{layer_ind});
         case 'bn'
             net{layer_ind}.X = X;
             net{layer_ind}.mode = 'test';

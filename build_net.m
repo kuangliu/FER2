@@ -10,7 +10,7 @@ function net = build_net()
 %   input - fc - ReLU - fc - svmloss
 
 
-D = 3073;
+D = 3072;
 H = 200;
 C = 10;
 
@@ -19,10 +19,11 @@ net = {};
 % FC layer
 %   - type: 'fc'
 %   - W: weights
+%   - b: bias
 %   - X: input data for BP usage, added in training forward process
 fc1.type = 'fc';
 fc1.W = randn(H, D, 'single')/sqrt(D/2);
-%fc1.W = [randn(H, D-1, 'single') / sqrt((D-1)/2), zeros(H, 1)];
+fc1.b = zeros(H, 1);
 net{end+1} = fc1;   % add to the network
 
 % BN layer
@@ -36,7 +37,7 @@ net{end+1} = relu1;
 % FC layer
 fc2.type = 'fc';
 fc2.W = randn(C, H, 'single')/sqrt(H);
-%fc2.W = [randn(C, H-1, 'single') / sqrt(H-1), zeros(C, 1)];
+fc2.b = zeros(C, 1);
 net{end+1} = fc2;
 
 
