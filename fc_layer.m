@@ -1,29 +1,32 @@
-function varargout = fc_layer(W, X, varargin)
+function varargout = fc_layer(layer, varargin)
 %FC_LAYER fully connected layer
 %
 % It performs:
-%   - forward pass: y = fc_layer(W, X)
-%   - backward pass: [dW, dX] = fc_layer(W, X, dy)
+%   - forward pass: y = fc_layer(layer)
+%   - backward pass: [dX, dW, db] = fc_layer(layer, dy)
 % 
 % Inputs:
-%   - W: weights [C, D]
-%   - X: input data [D, N]
-%   - varargin: output gradient dy, when it performs forward pass, it's null
+%   - layer: FC layer with
+%       - X: input data [D, N]
+%       - W: weights [C, D]
+%       - b: bias [C, 1]
+%   - varargin: when perform backward pass, it is output gradient dy
 %
 % Outputs:
 %   - varargout
-%       - forward pass: return activations y = W * X
+%       - forward pass: return activations y = W*X+b
 %       - backward pass: return local gradients dW & dX
 
 
-if nargin == 2 || isempty(varargin)
+if nargin == 1 || isempty(varargin)
     % forward pass, compute activations y
-    varargout{1} = W * X;
+    varargout{1} = bsxfun(@plus, layer.W * layer.X, layer.b);
 else
     % backward pass, compute local gradients dW & dX
     dy = varargin{1};
-    varargout{1} = dy * X';     % dW
-    varargout{2} = W' * dy;     % dX
+    varargout{1} = layer.W' * dy;     % dX
+    varargout{2} = dy * layer.X';     % dW
+    varargout{3} = sum(dy,2);     % db
 end
 
 

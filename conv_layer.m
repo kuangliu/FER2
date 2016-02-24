@@ -1,4 +1,4 @@
-function [y, varargout] = conv_layer(X, layer, varargin)
+function varargout = conv_layer(X, layer, varargin)
 %CONV_LAYER convolution layer
 %
 % It performs:
@@ -7,10 +7,11 @@ function [y, varargout] = conv_layer(X, layer, varargin)
 %
 % Inputs:
 %   - X: inputs sized [H,W,C,N]
-%   - layer: convolution layer
+%   - layer: convolution layer, with
 %       - W: conv weights sized [kH,kW,C,kN] (kN filters, each sized [kH,kW,C])
-%       - layer.pad: 0 padding
-%       - layer.stride
+%       - pad: 0 padding
+%       - stride
+%       - M: im2col results sized [kH*kW*C, oH*oW, N]
 %
 % Outputs:
 %   - y: activations sized [oH,oW,kN,N]
@@ -46,8 +47,7 @@ if ~isfield(layer, 'input_size')
 end
 
 if nargin == 2 || isempty(varargin)
-    %---------------------- forward pass ----------------------
-    
+    % forward pass
     % Padding
     X = padarray(X, [P,P]); % [H+2P,W+2P,C]
     
@@ -67,30 +67,28 @@ if nargin == 2 || isempty(varargin)
     end
     
     % output
-    varargout{1} = layer;
+    varargout{1} = y;
+    varargout{2} = layer;
 else
-    %---------------------- backward pass ----------------------
-    
+    % backward pass
     dy = varargin{1};
-    [oH,oW,kN,N] = size(dy);
-    
     weights = reshape(layer.W, [], kN);
     
     dy = reshape(dy, oH*oW, kN, N);
-    dX = zeros(size(X));      % [H,W,C,N]
-    dW = zeros(kH*kW*C, kN);  % [kH*kW*C, kN]
+    dX = zeros(size(X));            % [H,W,C,N]
+    dW = zeros(kH*kW*C, kN);        % [kH*kW*C, kN]
     for i = 1:N
-        dyi = dy(:,:,i);      % [oH*oW, kN]
-        M = layer.M(:,:,i);   % [kH*kW*C, oH*oW]
-        dW = dW + M * dyi;    % [kH*kW*C, kN]
+        dyi = dy(:,:,i);            % [oH*oW, kN]
+        M = layer.M(:,:,i);         % [kH*kW*C, oH*oW]
+        dW = dW + M * dyi;          % [kH*kW*C, kN]
         
-        dM = weights * dyi';  % [kH*kW*C, oH*oW]
-        dX(:,:,:,i) = col2im(dM);     % dX: [H,W,C]
+        dM = weights * dyi';        % [kH*kW*C, oH*oW]
+        dX(:,:,:,i) = col2im(dM);   % [H,W,C]
     end
     
     % output
-    y = dX;
-    varargout{1} = dW; 
+    varargout{1} = dX; 
+    varargout{2} = dW; 
 end
 
 
@@ -107,9 +105,7 @@ function M = im2col(im)
 %   - M: a matrix sized [kH*kW*C, N], N is the # of activation fields
 %
 
-global kH kW oH oW S
-
-C = size(im,3);
+global kH kW oH oW C S
 
 M = zeros(kH*kW*C, oH*oW);
 i = 1;

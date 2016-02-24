@@ -1,27 +1,27 @@
-function gradient_check(X, y, dW, layer)
-
-h = 1e-2;    
-num_checks = 25*9;
-for i = 1:num_checks
-    layer1 = layer;
-    layer1.W(i) = layer1.W(i) + h;
-    [a1, ~] = conv_layer(X, layer1);
-    a1 = reshape(a1, [], 3);
-    [loss1, ~] = svm_loss(a1, y);
-    
-    layer2 = layer;
-    layer2.W(i) = layer2.W(i) - h;
-    [a2, ~] = conv_layer(X, layer2);
-    a2 = reshape(a2, [], 3);
-    [loss2, ~] = svm_loss(a2, y);
-    
-    dNumerical = (loss1 - loss2) / (2 * h);
-    dTarget = dW(i);
-    rel_error = abs(dNumerical - dTarget) / ...
-        (abs(dNumerical) + abs(dTarget));
-    fprintf('#%d, numerical: %f analytic: %f, relative error: %f\n',...
-        i, dNumerical, dTarget, rel_error);
-end
+% function gradient_check(X, y, dW, layer)
+% 
+% h = 1e-2;    
+% num_checks = 25*9;
+% for i = 1:num_checks
+%     layer1 = layer;
+%     layer1.W(i) = layer1.W(i) + h;
+%     [a1, ~] = conv_layer(X, layer1);
+%     a1 = reshape(a1, [], 3);
+%     [loss1, ~] = svm_loss(a1, y);
+%     
+%     layer2 = layer;
+%     layer2.W(i) = layer2.W(i) - h;
+%     [a2, ~] = conv_layer(X, layer2);
+%     a2 = reshape(a2, [], 3);
+%     [loss2, ~] = svm_loss(a2, y);
+%     
+%     dNumerical = (loss1 - loss2) / (2 * h);
+%     dTarget = dW(i);
+%     rel_error = abs(dNumerical - dTarget) / ...
+%         (abs(dNumerical) + abs(dTarget));
+%     fprintf('#%d, numerical: %f analytic: %f, relative error: %f\n',...
+%         i, dNumerical, dTarget, rel_error);
+% end
 
 
 
@@ -52,34 +52,28 @@ end
 
 
 
-% function gradient_check(W, dW_analytic, X, y, layer)
-%     h = 1e-2;
-%     num_checks = 25;       % We only check 'num_checks' gradients
-%     
-%     for i = 1:num_checks
-%         W1 = double(W);
-%         W1(i) = W1(i) + h;
-%         a1 = fc_layer(W1, X);
-%         layer1 = layer;
-%         layer1.X = a1;
-%         [b1, ~] = bn_layer(layer1);
-%         [loss1, ~] = svm_loss(b1, y);
-%         
-%         W2 = double(W);
-%         W2(i) = W2(i) - h;
-%         a2 = fc_layer(W2, X);
-%         layer2 = layer;
-%         layer2.X = a2;
-%         [b2, ~] = bn_layer(layer2);
-%         [loss2, ~] = svm_loss(b2, y);
-%         
-%         dW_numerical = (loss1 - loss2) / (2 * h);
-%         dW_target = dW_analytic(i);
-%         rel_error = abs(dW_numerical - dW_target) / ...
-%                       (abs(dW_numerical) + abs(dW_target));
-%         fprintf('#%d, numerical: %f analytic: %f, relative error: %f\n', ...
-%                       i, dW_numerical, dW_target, rel_error);
-%         
-%     end
-% 
-% end
+function gradient_check(dW, layer, y)
+    h = 1e-3;
+    num_checks = 3;       % We only check 'num_checks' gradients
+    
+    for i = 1:num_checks
+        layer1 = layer;
+        layer1.b(i) = layer1.b(i) + h;
+        a1 = fc_layer(layer1);
+        [loss1, ~] = svm_loss(a1, y);
+        
+        layer2 = layer;
+        layer2.b(i) = layer2.b(i) - h;
+        a2 = fc_layer(layer2);
+        [loss2, ~] = svm_loss(a2, y);
+        
+        dW_numerical = (loss1 - loss2) / (2 * h);
+        dW_target = dW(i);
+        rel_error = abs(dW_numerical - dW_target) / ...
+                      (abs(dW_numerical) + abs(dW_target));
+        fprintf('#%d, numerical: %f analytic: %f, relative error: %f\n', ...
+                      i, dW_numerical, dW_target, rel_error);
+        
+    end
+
+end
