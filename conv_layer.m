@@ -1,23 +1,25 @@
-function varargout = conv_layer(X, layer, varargin)
+function varargout = conv_layer(layer, varargin)
 %CONV_LAYER convolution layer
 %
 % It performs:
-%   Forward pass: [y, layer] = conv_layer(X, layer)
-%   Backward pass: [dX, dW] = conv_layer(X, layer, dy)
+%   Forward pass: [y, layer] = conv_layer(layer)
+%   Backward pass: [dX, dW, db] = conv_layer(layer, dy)
 %
 % Inputs:
-%   - X: inputs sized [H,W,C,N]
 %   - layer: convolution layer, with
-%       - W: conv weights sized [kH,kW,C,kN] (kN filters, each sized [kH,kW,C])
-%       - pad: 0 padding
+%       - X: inputs [H,W,C,N]
+%       - W: conv weights [kH,kW,C,kN] (kN filters, each sized [kH,kW,C])
+%       - b: bias [1, kN]
+%       - pad: 0 padding num
 %       - stride
-%       - M: im2col results sized [kH*kW*C, oH*oW, N]
+%       - M: im2col results [kH*kW*C, oH*oW, N]
+%   - dy: output gradient
 %
 % Outputs:
-%   - y: activations sized [oH,oW,kN,N]
-%   - dX: input gradients sized [H,W,C,N]
-%   - dW: weight gradients sized [kH,kW,C,kN]
-%
+%   - y: activations [oH,oW,kN,N]
+%   - dX: input gradient [H,W,C,N]
+%   - dW: weight gradient [kH,kW,C,kN]
+%   - db: bias gradient [1, kN]
 
 % use global variables for passing params easily
 global H W C N kH kW kN oH oW S P
@@ -29,6 +31,8 @@ end
 if ~isfield(layer, 'pad')
     layer.pad = 0; % if H=W, set pad to (kH-1)/2 to keep the input size,
 end
+
+X = layer.X;
 
 % Input size
 [H,W,C,N] = size(X);
@@ -42,11 +46,11 @@ oH = floor((H+2*P-kH)/S+1);
 oW = floor((W+2*P-kW)/S+1);
 
 if ~isfield(layer, 'input_size')
-    layer.input_size = [H,W,C,N];
-    layer.output_size = [oH,oW,kN,N];
+    layer.input_size = [H, W, C, N];
+    layer.output_size = [oH, oW, kN, N];
 end
 
-if nargin == 2 || isempty(varargin)
+if nargin == 1 || isempty(varargin)
     % forward pass
     % Padding
     X = padarray(X, [P,P]); % [H+2P,W+2P,C]
@@ -59,9 +63,9 @@ if nargin == 2 || isempty(varargin)
         im = X(:,:,:,i);
         % im2col
         M = im2col(im);  % [kH*kW*C, oH*oW]
-        layer.M(:,:,i) = M;                 % cache for BP use
-        % convolution as matrix production
-        a = M'*weights;                     % [oH*oW, kN]
+        layer.M(:,:,i) = M;  % cache for BP use
+        % convolution as matrix multiplicatin
+        a = bsxfun(@plus, M'*weights, layer.b);  % [oH*oW, kN]
         % reshape to output tensor
         y(:,:,:,i) = reshape(a, oH, oW, kN);
     end
@@ -77,11 +81,12 @@ else
     dy = reshape(dy, oH*oW, kN, N);
     dX = zeros(size(X));            % [H,W,C,N]
     dW = zeros(kH*kW*C, kN);        % [kH*kW*C, kN]
+    db = zeros(1, kN);
     for i = 1:N
         dyi = dy(:,:,i);            % [oH*oW, kN]
         M = layer.M(:,:,i);         % [kH*kW*C, oH*oW]
         dW = dW + M * dyi;          % [kH*kW*C, kN]
-        
+        db = db + sum(dyi);
         dM = weights * dyi';        % [kH*kW*C, oH*oW]
         dX(:,:,:,i) = col2im(dM);   % [H,W,C]
     end
@@ -89,6 +94,7 @@ else
     % output
     varargout{1} = dX; 
     varargout{2} = dW; 
+    varargout{3} = db;
 end
 
 

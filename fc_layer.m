@@ -15,7 +15,7 @@ function varargout = fc_layer(layer, varargin)
 % Outputs:
 %   - varargout
 %       - forward pass: return activations y = W*X+b
-%       - backward pass: return local gradients dW & dX
+%       - backward pass: return local gradients dX, dW and db
 
 
 if nargin == 1 || isempty(varargin)
@@ -26,7 +26,7 @@ else
     dy = varargin{1};
     varargout{1} = layer.W' * dy;     % dX
     varargout{2} = dy * layer.X';     % dW
-    varargout{3} = sum(dy,2);     % db
+    varargout{3} = sum(dy, 2);     % db
 end
 
 

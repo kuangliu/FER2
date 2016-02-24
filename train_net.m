@@ -32,7 +32,19 @@ res.best_val_accuracy = 0;
 res.best_net = {};  % save the net with best val_acy
 
 W_sum = 0;  % weight square sum for regularizaiotn
-states = cell(1, layer_num);  % Adam Update status
+
+% init Adam Update states
+for i = 1:layer_num
+    switch net{i}.type
+        case 'fc'
+            net{i}.stateW = struct(); % state for weights
+            net{i}.stateB = struct(); % state for bias
+        case 'bn'  
+            net{i}.stateG = struct(); % state for Gamma
+            net{i}.stateB = struct(); % state for Beta
+    end
+end
+
 
 %--------------------------------------------------------------------------
 %                            Training Starts
@@ -50,27 +62,25 @@ for it = 1:num_iters
     % --------------------------------------------------------------------- 
     %                                                        forward pass
     % --------------------------------------------------------------------- 
-    for layer_ind = 1:layer_num
-        layer = net{layer_ind};
-
-        switch layer.type
+    for i = 1:layer_num
+        switch net{i}.type
             case 'fc'
                 % save input for BP usage
-                net{layer_ind}.X = X_batch;
+                net{i}.X = X_batch;
                 % forward through FC layer
-                X_batch = fc_layer(net{layer_ind});
+                X_batch = fc_layer(net{i});
                 % add up all the sum of squared weights for regularization
-                W_sum = W_sum + sum(sum(layer.W .* layer.W));
+                W_sum = W_sum + sum(sum(net{i}.W .* net{i}.W));
             
             case 'bn'
-                net{layer_ind}.mode = 'train';
-                net{layer_ind}.X = X_batch;
+                net{i}.mode = 'train';
+                net{i}.X = X_batch;
                 % add running mean/std to bn layer
-                [X_batch, net{layer_ind}] = bn_layer(net{layer_ind});
+                [X_batch, net{i}] = bn_layer(net{i});
                 
             case 'relu'
                 % save input for BP usage
-                net{layer_ind}.X = X_batch;
+                net{i}.X = X_batch;
                 % forward through ReLU layer
                 X_batch = relu_layer(X_batch);
         end
@@ -96,44 +106,38 @@ for it = 1:num_iters
     % --------------------------------------------------------------------- 
     %                                                       backward pass
     % --------------------------------------------------------------------- 
-    for layer_ind = layer_num:-1:1
-        layer = net{layer_ind};
-
-        switch layer.type
+    for i = layer_num:-1:1
+        switch net{i}.type
             case 'fc'
-                % output grad is the input gradient dX, renamed to 'grad' for BP convenience
-                [grad, dW, db] = fc_layer(layer, grad);  
+                % output grad is the input gradient dX, 
+                % renamed to 'grad' for BP convenience
+                [grad, dW, db] = fc_layer(net{i}, grad);  
                 
-                % add regularization term
-                dW = dW + opts.reg*layer.W;
+                % add regularization term, note we don't regularize bias
+                dW = dW + opts.reg*net{i}.W;
                 
-                % Adam Update
-                params = [layer.W, layer.b];
-                dParams = [dW, db];
-                [params, states{layer_ind}] = ...
-                    adam_update(params, dParams, opts.lr, states{layer_ind});
-                net{layer_ind}.W = params(:, 1:end-1);
-                net{layer_ind}.b = params(:, end);
+                % update weights
+                [net{i}.W, net{i}.stateW] = ...
+                    adam_update(net{i}.W, dW, opts.lr, net{i}.stateW);
                 
+                % update bias
+                [net{i}.b, net{i}.stateB] = ...
+                    adam_update(net{i}.b, db, opts.lr, net{i}.stateB);
+                 
             case 'bn'
-                layer.mode = 'train';
-                [grad, dGamma, dBeta] = bn_layer(layer, grad);
+                net{i}.mode = 'train';
+                [grad, dGamma, dBeta] = bn_layer(net{i}, grad);
                 
-                % Adam Update gamma & beta
-                % 1. cat gamma & beta together sized [D,2]
-                params = [layer.gamma, layer.beta];
-                dParams = [dGamma, dBeta];
+                % update gamma
+                [net{i}.gamma, net{i}.stateG] = ...
+                    adam_update(net{i}.gamma, dGamma, opts.lr, net{i}.stateG);
                 
-                % 2. Adam update cated params
-                [params, states{layer_ind}] = ...
-                    adam_update(params, dParams, opts.lr, states{layer_ind});
-                
-                % 3. split updated params back to gamma & beta
-                net{layer_ind}.gamma = params(:,1);
-                net{layer_ind}.beta = params(:,2);
+                % update beta
+                [net{i}.beta, net{i}.stateB] = ...
+                    adam_update(net{i}.beta, dBeta, opts.lr, net{i}.stateB);
                 
             case 'relu'
-                grad = relu_layer(layer.X, grad);
+                grad = relu_layer(net{i}.X, grad);
                 
         end
     end
@@ -148,7 +152,7 @@ for it = 1:num_iters
         
         % validation
         [res.val_losses(epoch_ind), res.val_accuracies(epoch_ind)] = ...
-                            predict(net, X_val, y_val);
+            predict(net, X_val, y_val);
         
         if res.val_accuracies(epoch_ind) > res.best_val_accuracy
             res.best_val_accuracy = res.val_accuracies(epoch_ind);

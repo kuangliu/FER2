@@ -14,7 +14,7 @@ function [X, state] = adam_update(X, dX, lr, state)
 %
 
 
-if ~isfield(state, 'm')  % init params for the first time
+if ~isfield(state, 'm') % init params for the first time
     state.m = zeros(size(X), 'single');    
     state.v = zeros(size(X), 'single');    
     state.t = 0;
