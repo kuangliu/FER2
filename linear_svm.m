@@ -45,7 +45,7 @@ opts.num_epochs = 25;
 opts.num_iters = 1000;
 
 net = build_net();
-[best_net, loss_history] = train_net(net, X, y, X_val, y_val, opts);
+res = train_net(net, X, y, X_val, y_val, opts);
 
 % Xavier initialization W
 %W = randn(C, D, 'like', X_train) / sqrt(D);

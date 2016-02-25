@@ -16,29 +16,44 @@ C = 10;
 
 net = {};
 
+
+c1.type = 'conv';
+c1.W = randn(3,3,3,10)/sqrt(3*3*3);
+c1.b = zeros(1,10);
+c1.stride = 2;
+c1.pad = 0;
+net{end+1} = c1;
+
+f1.type = 'fc';
+f1.W = randn(10, 2250, 'single')/sqrt(2250/2);
+f1.b = zeros(10, 1);
+net{end+1} = f1;
+
+
+
 % FC layer
 %   - type: 'fc'
 %   - W: weights
 %   - b: bias
 %   - X: input data for BP usage, added in training forward process
-fc1.type = 'fc';
-fc1.W = randn(H, D, 'single')/sqrt(D/2);
-fc1.b = zeros(H, 1);
-net{end+1} = fc1;   % add to the network
+% fc1.type = 'fc';
+% fc1.W = randn(H, D, 'single')/sqrt(D/2);
+% fc1.b = zeros(H, 1);
+% net{end+1} = fc1;   % add to the network
 
 % BN layer
-bn1.type = 'bn';
-net{end+1} = bn1;
+% bn1.type = 'bn';
+% net{end+1} = bn1;
 
 % ReLU layer
-relu1.type = 'relu';
-net{end+1} = relu1;
+% relu1.type = 'relu';
+% net{end+1} = relu1;
 
 % FC layer
-fc2.type = 'fc';
-fc2.W = randn(C, H, 'single')/sqrt(H);
-fc2.b = zeros(C, 1);
-net{end+1} = fc2;
+% fc2.type = 'fc';
+% fc2.W = randn(C, H, 'single')/sqrt(H);
+% fc2.b = zeros(C, 1);
+% net{end+1} = fc2;
 
 
 

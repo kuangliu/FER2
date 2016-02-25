@@ -13,15 +13,15 @@ function varargout = conv_layer(layer, varargin)
 %       - pad: 0 padding num
 %       - stride
 %       - M: im2col results [kH*kW*C, oH*oW, N]
-%   - dy: output gradient
+%   - dy: output gradients
 %
 % Outputs:
 %   - y: activations [oH,oW,kN,N]
-%   - dX: input gradient [H,W,C,N]
-%   - dW: weight gradient [kH,kW,C,kN]
-%   - db: bias gradient [1, kN]
+%   - dX: input gradients [H,W,C,N]
+%   - dW: weight gradients [kH,kW,C,kN]
+%   - db: bias gradients [1, kN]
 
-% use global variables for passing params easily
+% use global variables for passing params easily.
 global H W C N kH kW kN oH oW S P
 
 if ~isfield(layer, 'stride')
@@ -93,7 +93,7 @@ else
     
     % output
     varargout{1} = dX; 
-    varargout{2} = dW; 
+    varargout{2} = reshape(dW,kH,kW,C,kN); 
     varargout{3} = db;
 end
 
@@ -120,7 +120,7 @@ for w = 1:oW
     for h = 1:oH
         y = 1+(h-1)*S;
         cube = im(y:y+kH-1, x:x+kW-1, :);
-        
+
         M(:,i) = cube(:); % reshape to 1 column
         i = i+1;
     end

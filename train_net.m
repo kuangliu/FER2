@@ -19,7 +19,7 @@ function res = train_net(net, X, y, X_val, y_val, opts)
 
 
 layer_num = numel(net);
-N = size(X, 2);
+N = numel(y);
 
 num_per_epoch = N / opts.batch_size;
 num_iters = num_per_epoch * opts.num_epochs;
@@ -36,7 +36,7 @@ W_sum = 0;  % weight square sum for regularizaiotn
 % init Adam Update states
 for i = 1:layer_num
     switch net{i}.type
-        case 'fc'
+        case {'fc', 'conv'}
             net{i}.stateW = struct(); % state for weights
             net{i}.stateB = struct(); % state for bias
         case 'bn'  
@@ -54,7 +54,7 @@ for it = 1:num_iters
     %  --------------------------------------------------------------------
     %                                                       sample a batch
     %  --------------------------------------------------------------------
-    [X_batch, batch_idx] = datasample(X, opts.batch_size, 2, 'Replace', false);
+    [X_batch, batch_idx] = datasample(X, opts.batch_size, 4, 'Replace', false);
     y_batch = y(batch_idx);
     % X_batch = X;
     % y_batch = y;
@@ -65,24 +65,35 @@ for it = 1:num_iters
     for i = 1:layer_num
         switch net{i}.type
             case 'fc'
+                % convert X_batch to 2D
+                X_batch = reshape(X_batch, [], opts.batch_size);
+                
                 % save input for BP usage
                 net{i}.X = X_batch;
+                
                 % forward through FC layer
                 X_batch = fc_layer(net{i});
+                
                 % add up all the sum of squared weights for regularization
                 W_sum = W_sum + sum(sum(net{i}.W .* net{i}.W));
             
             case 'bn'
                 net{i}.mode = 'train';
                 net{i}.X = X_batch;
+                
                 % add running mean/std to bn layer
                 [X_batch, net{i}] = bn_layer(net{i});
                 
             case 'relu'
                 % save input for BP usage
                 net{i}.X = X_batch;
+                
                 % forward through ReLU layer
                 X_batch = relu_layer(X_batch);
+                
+            case 'conv'
+                net{i}.X = X_batch;
+                [X_batch, net{i}] = conv_layer(net{i});
         end
     end
     
@@ -91,6 +102,7 @@ for it = 1:num_iters
     % --------------------------------------------------------------------- 
     % 'grad' is the output gradient, pass it back through the network
     % in the end: X_batch = final_scores
+    
     [loss, grad] = svm_loss(X_batch, y_batch);
     
     % add regularization term
@@ -138,6 +150,17 @@ for it = 1:num_iters
                 
             case 'relu'
                 grad = relu_layer(net{i}.X, grad);
+                
+            case 'conv'
+                [grad, dW, db] = conv_layer(net{i}, grad);
+                
+                % update weights
+                [net{i}.W, net{i}.stateW] = ...
+                    adam_update(net{i}.W, dW, opts.lr, net{i}.stateW);
+                
+                % update bias
+                [net{i}.b, net{i}.stateB] = ...
+                    adam_update(net{i}.b, db, opts.lr, net{i}.stateB);
                 
         end
     end
