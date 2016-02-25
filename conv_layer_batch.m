@@ -1,5 +1,5 @@
 function varargout = conv_layer_batch(layer, varargin)
-%CONV_LAYER_BATCH convolution layer without looping through N
+%CONV_LAYER_BATCH convolution layer without looping through N.
 %
 % It performs:
 %   Forward pass: [y, layer] = conv_layer_batch(layer)
@@ -80,9 +80,7 @@ else
     dM = weights * dy'; % [kH*kW*C, oH*oW*N]
     %dX = col2im2(dM);
     
-    
-    
-    dX = col2im(dM,H, W, C, N, kH, kW, oH, oW, S);
+    dX = col2im(dM, [H,W,C,N], [kH,kW], [oH,oW], S);
     
     % output
     varargout{1} = dX;
@@ -126,8 +124,11 @@ M = permute(M, [1,3,2]); % [kH*kW*C, oH*oW, N]
 M = reshape(M, kH*kW*C, oH*oW*N);
 
 
-function im = col2im2(M)
+function im = col2im_never_use(M)
 % COL2IM: convert column gradients back to original image gradients
+%
+% This function is re-implemented as "col2im.c". The logic is identical. 
+% But C code is 10x faster.
 %
 % Inputs:
 %   - M: sized [kH*kW*C, oH*oW*N]

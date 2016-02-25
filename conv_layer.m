@@ -1,5 +1,6 @@
 function varargout = conv_layer(layer, varargin)
 %CONV_LAYER convolution layer
+% In practice, use the faster batch version "conv_layer_batch.m".
 %
 % It performs:
 %   Forward pass: [y, layer] = conv_layer(layer)
