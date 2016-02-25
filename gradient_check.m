@@ -1,7 +1,7 @@
 function gradient_check(y, db, layer)
 
 h = 1e-3;    
-num_checks = 3;
+num_checks = 81;
 for i = 1:num_checks
     layer1 = layer;
     layer1.b(i) = layer1.b(i) + h;

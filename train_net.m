@@ -93,7 +93,7 @@ for it = 1:num_iters
                 
             case 'conv'
                 net{i}.X = X_batch;
-                [X_batch, net{i}] = conv_layer(net{i});
+                [X_batch, net{i}] = conv_layer_batch(net{i});
         end
     end
     
@@ -152,7 +152,7 @@ for it = 1:num_iters
                 grad = relu_layer(net{i}.X, grad);
                 
             case 'conv'
-                [grad, dW, db] = conv_layer(net{i}, grad);
+                [grad, dW, db] = conv_layer_batch(net{i}, grad);
                 
                 % update weights
                 [net{i}.W, net{i}.stateW] = ...

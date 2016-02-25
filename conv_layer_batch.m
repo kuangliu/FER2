@@ -1,9 +1,9 @@
-function varargout = conv_layer(layer, varargin)
-%CONV_LAYER convolution layer
+function varargout = conv_layer_batch(layer, varargin)
+%CONV_LAYER_BATCH convolution layer without looping through N
 %
 % It performs:
-%   Forward pass: [y, layer] = conv_layer(layer)
-%   Backward pass: [dX, dW, db] = conv_layer(layer, dy)
+%   Forward pass: [y, layer] = conv_layer_batch(layer)
+%   Backward pass: [dX, dW, db] = conv_layer_batch(layer, dy)
 %
 % Inputs:
 %   - layer: convolution layer, with
@@ -12,7 +12,7 @@ function varargout = conv_layer(layer, varargin)
 %       - b: bias [1, kN]
 %       - pad: 0 padding num
 %       - stride
-%       - M: im2col results [kH*kW*C, oH*oW, N]
+%       - M: im2col results [kH*kW*C, oH*oW*N]
 %   - dy: output gradients
 %
 % Outputs:
@@ -56,20 +56,13 @@ if nargin == 1 || isempty(varargin)
     X = padarray(X, [P,P]); % [H+2P,W+2P,C]
     
     weights = reshape(layer.W, kH*kW*C, kN);
-    layer.M = zeros(kH*kW*C, oH*oW, N);  % cache im2col results of each image
+    layer.M = im2col(X);    % [kH*kW*C, oH*oW*N]
     
-    y = zeros(oH,oW,kN,N);
-    for i = 1:N
-        im = X(:,:,:,i);
-        % im2col
-        M = im2col(im);  % [kH*kW*C, oH*oW]
-        layer.M(:,:,i) = M;  % cache for BP use
-        % convolution as matrix multiplicatin
-        a = bsxfun(@plus, M'*weights, layer.b);  % [oH*oW, kN]
-        % reshape to output tensor
-        y(:,:,:,i) = reshape(a, oH, oW, kN);
-    end
-    
+    y = bsxfun(@plus, layer.M'*weights, layer.b);  % [oH*oW*N, kN]
+    y = reshape(y, oH*oW, N, kN);
+    y = permute(y, [1,3,2]);     % [oH*oW, kN, N]
+    y = reshape(y, oH*oW*kN, N); % [oH*oW*kN, N]
+
     % output
     varargout{1} = y;
     varargout{2} = layer;
@@ -79,17 +72,13 @@ else
     weights = reshape(layer.W, kH*kW*C, kN);
     
     dy = reshape(dy, oH*oW, kN, N);
-    dX = zeros(size(X));            % [H,W,C,N]
-    dW = zeros(kH*kW*C, kN);        % [kH*kW*C, kN]
-    db = zeros(1, kN);
-    for i = 1:N
-        dyi = dy(:,:,i);            % [oH*oW, kN]
-        M = layer.M(:,:,i);         % [kH*kW*C, oH*oW]
-        dW = dW + M * dyi;          % [kH*kW*C, kN]
-        db = db + sum(dyi);
-        dM = weights * dyi';        % [kH*kW*C, oH*oW]
-        dX(:,:,:,i) = col2im(dM);   % [H,W,C]
-    end
+    dy = permute(dy, [1,3,2]);     % [oH*oW, N, kN]
+    dy = reshape(dy, oH*oW*N, kN); % [oH*oW*N, kN]
+    
+    dW = layer.M * dy;  % [kH*kW*C, kN]
+    db = sum(dy);       % [1,kN]
+    dM = weights * dy'; % [kH*kW*C, oH*oW*N]
+    dX = col2im(dM);
     
     % output
     varargout{1} = dX;
@@ -99,62 +88,70 @@ end
 
 
 function M = im2col(im)
-% IM2COL convert a image to cols for convolution
+% IM2COL convert a batch of images to cols for convolution
 %
 % Inputs:
-%   - im: one image sized [H,W,C]
+%   - im: a batch of images sized [H,W,C,N]
 %   - kH, kW: kernel size
 %   - oH, oW: output size
 %   - S: stride
 %
 % Output:
-%   - M: a matrix sized [kH*kW*C, NR], NR=oH*OW, is the # of receptive fields
+%   - M: a matrix sized [kH*kW*C, oH*oW*N], oH*OW is the # of receptive
+%   fields of each image
 %
 
-global kH kW oH oW C S
+global kH kW oH oW C N S
 
-M = zeros(kH*kW*C, oH*oW);
+M = zeros(kH*kW*C*N, oH*oW);
 i = 1;
 for w = 1:oW
     x = 1+(w-1)*S;
     for h = 1:oH
         y = 1+(h-1)*S;
-        cube = im(y:y+kH-1, x:x+kW-1, :);
+        cube = im(y:y+kH-1, x:x+kW-1, :, :);
         
         M(:,i) = cube(:); % reshape to 1 column
         i = i+1;
     end
 end
 
+% some crazy reshape tricks
+M = reshape(M, kH*kW*C, N, oH*oW);
+M = permute(M, [1,3,2]); % [kH*kW*C, oH*oW, N]
+M = reshape(M, kH*kW*C, oH*oW*N);
+
 
 function im = col2im(M)
 % COL2IM: convert column gradients back to original image gradients
 %
 % Inputs:
-%   - M: sized [kH*kW*C, oH*oW]
+%   - M: sized [kH*kW*C, oH*oW*N]
 %   - H,W,C: im size
 %   - kH,kW: kernel size
 %   - S: stride
 %
 % Outputs:
-%   - im: the orignal image gradients, sized [H,W,C]
+%   - im: the orignal image gradients, sized [H,W,C,N]
 %
 
-global H W C kH kW oH oW S
+global H W C N kH kW oH oW S
 
-im = zeros(H,W,C);
+im = zeros(H,W,C,N);
 i = 1;
-for w = 1:oW
-    x = 1+(w-1)*S;
-    for h = 1:oH
-        y = 1+(h-1)*S;
-        
-        col = M(:,i);                   % [kH*kW*C, 1]
-        col = reshape(col, kH, kW, C);  % [kH,kW,C]
-        
-        % collect the gradients
-        im(y:y+kH-1, x:x+kW-1, :) = im(y:y+kH-1, x:x+kW-1, :) + col;
-        i = i+1;
+for n = 1:N
+    for w = 1:oW
+        x = 1+(w-1)*S;
+        for h = 1:oH
+            y = 1+(h-1)*S;
+            
+            col = M(:,i);                   % [kH*kW*C, 1]
+            col = reshape(col, kH, kW, C);  % [kH,kW,C]
+            
+            % collect the gradients
+            im(y:y+kH-1, x:x+kW-1, :, n) = im(y:y+kH-1, x:x+kW-1, :, n) + col;
+            i = i+1;
+        end
     end
 end
 
