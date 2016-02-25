@@ -2,21 +2,26 @@ function [loss, accuracy] = predict(net, X, y_target)
 %PREDICT the accuracy of trained network
 
 layer_num = numel(net);
+N = numel(y_target);
 
 % forward the net to compute the scores
-for layer_ind = 1:layer_num
-    type = net{layer_ind}.type;
+for i = 1:layer_num
+    type = net{i}.type;
     
     switch type
         case 'fc'
-            net{layer_ind}.X = X;
-            X = fc_layer(net{layer_ind});
+            X = reshape(X, [], N);
+            net{i}.X = X;
+            X = fc_layer(net{i});
         case 'bn'
-            net{layer_ind}.X = X;
-            net{layer_ind}.mode = 'test';
-            X = bn_layer(net{layer_ind});
+            net{i}.X = X;
+            net{i}.mode = 'test';
+            X = bn_layer(net{i});
         case 'relu'
             X = relu_layer(X);
+        case 'conv'
+            net{i}.X = X;
+            [X, net{i}] = conv_layer(net{i});
     end
 end
 

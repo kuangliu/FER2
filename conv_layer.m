@@ -16,7 +16,7 @@ function varargout = conv_layer(layer, varargin)
 %   - dy: output gradients
 %
 % Outputs:
-%   - y: activations [oH,oW,kN,N]
+%   - y: activations [oH*oW*kN,N]
 %   - dX: input gradients [H,W,C,N]
 %   - dW: weight gradients [kH,kW,C,kN]
 %   - db: bias gradients [1, kN]
