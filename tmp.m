@@ -1,13 +1,1 @@
-function tmp()
-
-if 2>1
-    a = 1;
-end
-
-t();
-
-
-
-function t()
-global a
-disp(a)
+res = train_net(net, X, y, X_val, y_val, opts);

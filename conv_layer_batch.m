@@ -78,7 +78,11 @@ else
     dW = layer.M * dy;  % [kH*kW*C, kN]
     db = sum(dy);       % [1,kN]
     dM = weights * dy'; % [kH*kW*C, oH*oW*N]
-    dX = col2im(dM);
+    %dX = col2im2(dM);
+    
+    
+    
+    dX = col2im(dM,H, W, C, N, kH, kW, oH, oW, S);
     
     % output
     varargout{1} = dX;
@@ -122,7 +126,7 @@ M = permute(M, [1,3,2]); % [kH*kW*C, oH*oW, N]
 M = reshape(M, kH*kW*C, oH*oW*N);
 
 
-function im = col2im(M)
+function im = col2im2(M)
 % COL2IM: convert column gradients back to original image gradients
 %
 % Inputs:

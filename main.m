@@ -23,7 +23,7 @@ W = 5;
 C = 3;
 N = 3;
 
-X = randn(H,W,C,N,'single');
+X = randn(H,W,C,N);
 y = [1,2,3];
 
 layer.X = X;
@@ -37,7 +37,7 @@ a = reshape(a, [], 3);
 
 da = reshape(dscores, 3, 3, 3, 3);
 [dX, dW, db] = conv_layer_batch(layer, da);
-gradient_check(y, db, layer)
+gradient_check(y, dX, layer)
 
 
 

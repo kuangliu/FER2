@@ -21,7 +21,7 @@ for i = 1:layer_num
             X = relu_layer(X);
         case 'conv'
             net{i}.X = X;
-            [X, net{i}] = conv_layer(net{i});
+            [X, net{i}] = conv_layer_batch(net{i});
     end
 end
 
