@@ -9,26 +9,37 @@ function net = build_net()
 % The network structure:
 %   input - fc - ReLU - fc - svmloss
 
-
-D = 3072;
-H = 200;
-C = 10;
-
 net = {};
 
-
+% Conv layer
 c1.type = 'conv';
-c1.W = randn(3,3,3,10)/sqrt(3*3*3);
+c1.W = randn(3,3,3,10)/sqrt(3*3*3/2);
 c1.b = zeros(1,10);
 c1.stride = 2;
-c1.pad = 0;
+c1.pad = 1;
 net{end+1} = c1;
 
+% ReLU
+r1.type = 'relu';
+net{end+1} = r1;
+
+% Conv layer
+c2.type = 'conv';
+c2.W = randn(3,3,10,10)/sqrt(3*10*3/2);
+c2.b = zeros(1,10);
+c2.stride = 1;
+c2.pad = 1;
+net{end+1} = c2;
+
+% ReLU
+r2.type = 'relu';
+net{end+1} = r2;
+
+% FC layer
 f1.type = 'fc';
-f1.W = randn(10, 2250, 'single')/sqrt(2250/2);
+f1.W = randn(10, 2560, 'single')/sqrt(2560);
 f1.b = zeros(10, 1);
 net{end+1} = f1;
-
 
 
 % FC layer

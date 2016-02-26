@@ -41,7 +41,7 @@ C = 10;               % C classes
 opts.lr = 0.001;                    % learning rat
 opts.reg = 0.00001;                 % regularization strength
 opts.batch_size = 200;           
-opts.num_epochs = 25;
+opts.num_epochs = 1;
 opts.num_iters = 1000;
 
 net = build_net();

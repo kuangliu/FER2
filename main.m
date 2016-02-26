@@ -23,7 +23,7 @@ W = 5;
 C = 3;
 N = 3;
 
-X = single(randn(H,W,C,N));
+X = randn(H,W,C,N,'single');
 y = [1,2,3];
 
 layer.X = X;

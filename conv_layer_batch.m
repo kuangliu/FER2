@@ -16,13 +16,12 @@ function varargout = conv_layer_batch(layer, varargin)
 %   - dy: output gradients
 %
 % Outputs:
-%   - y: activations [oH*oW*kN,N]
+%   - y: activations [oH,oW,kN,N]
 %   - dX: input gradients [H,W,C,N]
 %   - dW: weight gradients [kH,kW,C,kN]
 %   - db: bias gradients [1, kN]
 
 % use global variables for passing params easily.
-global H W C N kH kW kN oH oW S P
 
 if ~isfield(layer, 'stride')
     layer.stride = 1;
@@ -37,44 +36,58 @@ if ~isa(layer.X, 'single')
     layer.X = single(layer.X);
 end
 
-X = layer.X;
+if ~isa(layer.W, 'single')
+    fprintf('The weight is not single! Converted.\n')
+    layer.W = single(layer.W);
+end
 
-% Input size
-[H,W,C,N] = size(X);
-[kH,kW,~,kN] = size(layer.W);
 
 S = layer.stride;
 P = layer.pad;
 
-% Output size
-oH = floor((H+2*P-kH)/S+1);
-oW = floor((W+2*P-kW)/S+1);
-
-if ~isfield(layer, 'input_size')
-    layer.input_size = [H, W, C, N];
-    layer.output_size = [oH, oW, kN, N];
-end
 
 if nargin == 1 || isempty(varargin)
     % forward pass
+    % Input size
+    [H,W,C,N] = size(layer.X);
+    [kH,kW,~,kN] = size(layer.W);
+
+    % Output size
+    oH = floor((H+2*P-kH)/S+1);
+    oW = floor((W+2*P-kW)/S+1);
+
+    if ~isfield(layer, 'input_size')
+        layer.input_size = [H, W, C, N];
+        layer.output_size = [oH, oW, kN, N];
+    end
+        
     % Padding
-    X = padarray(X, [P,P]); % [H+2P,W+2P,C,N]
-    
+    layer.X = padarray(layer.X, [P,P]); % [H+2P,W+2P,C,N]
+        
     weights = reshape(layer.W, kH*kW*C, kN);
+    
     % The C version im2col is faster
-    layer.M = im2col(X, [kH,kW], [oH,oW],S);    % [kH*kW*C, oH*oW*N]
-    %layer.M = im2col2(X);    % [kH*kW*C, oH*oW*N]
+    layer.M = im2col(layer.X, [kH,kW], [oH,oW], S);  % [kH*kW*C, oH*oW*N]
+    %layer.M = im2col2(layer.X, [kH,kW], [oH,oW], S);  % [kH*kW*C, oH*oW*N]
     
     y = bsxfun(@plus, layer.M'*weights, layer.b);  % [oH*oW*N, kN]
     y = reshape(y, oH*oW, N, kN);
-    y = permute(y, [1,3,2]);     % [oH*oW, kN, N]
-    y = reshape(y, oH*oW*kN, N); % [oH*oW*kN, N]
+    y = permute(y, [1,3,2]);     % [oH*oW,kN,N]
+    y = reshape(y, oH,oW,kN, N); % [oH,oW,kN,N]
 
     % output
     varargout{1} = y;
     varargout{2} = layer;
 else
     % backward pass
+    % Input size
+    [HP,WP,C,N] = size(layer.X); % HP=H+2P, WP=W+2P
+    [kH,kW,~,kN] = size(layer.W);
+
+    % Output size
+    oH = floor((HP-kH)/S+1);
+    oW = floor((WP-kW)/S+1);
+    
     dy = varargin{1};
     weights = reshape(layer.W, kH*kW*C, kN);
     
@@ -86,34 +99,38 @@ else
     db = sum(dy);       % [1,kN]
     dM = weights * dy'; % [kH*kW*C, oH*oW*N]
     
-    % col2im in C, 10X faster than Matlab version
-    dX = col2im(dM, [H,W,C,N], [kH,kW], [oH,oW], S); 
-    %dX = col2im2(dM); % Matlab version 
+    % The C version col2im is 10X faster than Matlab version
+    % Note the size(X) is the size after padding
+    dX = col2im(dM, size(layer.X), [kH,kW], [oH,oW], S); 
+    %dX = col2im2(dM, [HP, WP, C, N], [kH, kW], [oH, oW], S); % Matlab version 
     
     % output
-    varargout{1} = dX;
+    varargout{1} = dX(P+1:end-P, P+1:end-P, :, :);
     varargout{2} = reshape(dW,kH,kW,C,kN);
     varargout{3} = db;
 end
 
 
-function M = im2col2(im)
+function M = im2col2(im, kernel_size, output_size, S)
 % IM2COL convert a batch of images to cols for convolution
 %
 % In practice, use "im2col.c" instead. It's faster.
 %
 % Inputs:
-%   - im: a batch of images sized [H,W,C,N]
-%   - kH, kW: kernel size
-%   - oH, oW: output size
+%   - im: a batch of padded images sized [H+2P,W+2P,C,N]
+%   - kernel_size: [kH, kW]
+%   - output_size: [oH, oW]
 %   - S: stride
 %
 % Output:
-%   - M: a matrix sized [kH*kW*C, oH*oW*N], oH*OW is the # of receptive
+%   - M: a matrix sized [kH*kW*C, oH*oW*N], oH*oW is the # of receptive
 %   fields of each image
 %
-
-global kH kW oH oW C N S
+[~,~,C,N] = size(im);
+kH = kernel_size(1);
+kW = kernel_size(2);
+oH = output_size(1);
+oW = output_size(2);
 
 M = zeros(kH*kW*C*N, oH*oW);
 i = 1;
@@ -128,13 +145,14 @@ for w = 1:oW
     end
 end
 
-% some crazy reshape tricks
+% some crazy reshape tricks.
+% with these reshape moves, we can reduce 1 for-loop usage.
 M = reshape(M, kH*kW*C, N, oH*oW);
 M = permute(M, [1,3,2]); % [kH*kW*C, oH*oW, N]
 M = reshape(M, kH*kW*C, oH*oW*N);
 
 
-function im = col2im2(M)
+function im = col2im2(M, im_size, kernel_size, output_size, S)
 % COL2IM: convert column gradients back to original image gradients
 %
 % This function is re-implemented as "col2im.c". The logic is identical. 
@@ -142,17 +160,22 @@ function im = col2im2(M)
 %
 % Inputs:
 %   - M: sized [kH*kW*C, oH*oW*N]
-%   - H,W,C: im size
-%   - kH,kW: kernel size
+%   - im_size: [H,W,C,N] original image size
+%   - kernel_size: [kH,kW]
+%   - output_size: [oH,oW]
 %   - S: stride
 %
 % Outputs:
-%   - im: the orignal image gradients, sized [H,W,C,N]
+%   - im: the orignal padded image gradients, sized [H+2P,W+2P,C,N]
 %
+im = zeros(im_size, 'single');
+C = im_size(3);
+N = im_size(4);
+kH = kernel_size(1);
+kW = kernel_size(2);
+oH = output_size(1);
+oW = output_size(2);
 
-global H W C N kH kW oH oW S
-
-im = zeros(H,W,C,N);
 i = 1;
 for n = 1:N
     for w = 1:oW

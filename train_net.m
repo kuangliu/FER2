@@ -65,9 +65,6 @@ for it = 1:num_iters
     for i = 1:layer_num
         switch net{i}.type
             case 'fc'
-                % convert X_batch to 2D
-                X_batch = reshape(X_batch, [], opts.batch_size);
-                
                 % save input for BP usage
                 net{i}.X = X_batch;
                 
