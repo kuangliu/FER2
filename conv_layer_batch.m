@@ -32,6 +32,11 @@ if ~isfield(layer, 'pad')
     layer.pad = 0; % if H=W, set pad to (kH-1)/2 to keep the input size,
 end
 
+if ~isa(layer.X, 'single')
+    fprintf('The input data is not single! Converted.\n')
+    layer.X = single(layer.X);
+end
+
 X = layer.X;
 
 % Input size
@@ -53,10 +58,12 @@ end
 if nargin == 1 || isempty(varargin)
     % forward pass
     % Padding
-    X = padarray(X, [P,P]); % [H+2P,W+2P,C]
+    X = padarray(X, [P,P]); % [H+2P,W+2P,C,N]
     
     weights = reshape(layer.W, kH*kW*C, kN);
-    layer.M = im2col(X);    % [kH*kW*C, oH*oW*N]
+    % The C version im2col is faster
+    layer.M = im2col(X, [kH,kW], [oH,oW],S);    % [kH*kW*C, oH*oW*N]
+    %layer.M = im2col2(X);    % [kH*kW*C, oH*oW*N]
     
     y = bsxfun(@plus, layer.M'*weights, layer.b);  % [oH*oW*N, kN]
     y = reshape(y, oH*oW, N, kN);
@@ -78,9 +85,10 @@ else
     dW = layer.M * dy;  % [kH*kW*C, kN]
     db = sum(dy);       % [1,kN]
     dM = weights * dy'; % [kH*kW*C, oH*oW*N]
-    %dX = col2im2(dM);
     
-    dX = col2im(dM, [H,W,C,N], [kH,kW], [oH,oW], S);
+    % col2im in C, 10X faster than Matlab version
+    dX = col2im(dM, [H,W,C,N], [kH,kW], [oH,oW], S); 
+    %dX = col2im2(dM); % Matlab version 
     
     % output
     varargout{1} = dX;
@@ -89,8 +97,10 @@ else
 end
 
 
-function M = im2col(im)
+function M = im2col2(im)
 % IM2COL convert a batch of images to cols for convolution
+%
+% In practice, use "im2col.c" instead. It's faster.
 %
 % Inputs:
 %   - im: a batch of images sized [H,W,C,N]
@@ -124,7 +134,7 @@ M = permute(M, [1,3,2]); % [kH*kW*C, oH*oW, N]
 M = reshape(M, kH*kW*C, oH*oW*N);
 
 
-function im = col2im_never_use(M)
+function im = col2im2(M)
 % COL2IM: convert column gradients back to original image gradients
 %
 % This function is re-implemented as "col2im.c". The logic is identical. 

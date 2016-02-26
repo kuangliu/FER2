@@ -23,12 +23,13 @@ W = 5;
 C = 3;
 N = 3;
 
-X = randn(H,W,C,N);
+X = single(randn(H,W,C,N));
 y = [1,2,3];
 
 layer.X = X;
 layer.W = randn(3,3,3,3);
 layer.b = zeros(1,3);
+%layer.pad = 1;
 
 [a, layer] = conv_layer_batch(layer);
 a = reshape(a, [], 3);
