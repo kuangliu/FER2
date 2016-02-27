@@ -2,7 +2,7 @@ function varargout = fc_layer(layer, varargin)
 %FC_LAYER fully connected layer
 %
 % It performs:
-%   - forward pass: y = fc_layer(layer)
+%   - forward pass: [y, layer] = fc_layer(layer)
 %   - backward pass: [dX, dW, db] = fc_layer(layer, dy)
 % 
 % Inputs:
@@ -28,7 +28,14 @@ end
 
 if nargin == 1 || isempty(varargin)
     % forward pass, compute activations y
+    if ~isfield(layer, 'W')
+        in_size = size(X,1);
+        layer.W = randn(layer.out_size, in_size, 'single')/sqrt(in_size); 
+        layer.b = zeros(layer.out_size, 1, 'single');
+    end
+    
     varargout{1} = bsxfun(@plus, layer.W*X, layer.b);
+    varargout{2} = layer;
 else
     % backward pass, compute local gradients dW & dX
     dy = varargin{1};

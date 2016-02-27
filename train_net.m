@@ -69,7 +69,7 @@ for it = 1:num_iters
                 net{i}.X = X_batch;
                 
                 % forward through FC layer
-                X_batch = fc_layer(net{i});
+                [X_batch, net{i}] = fc_layer(net{i});
                 
                 % add up all the sum of squared weights for regularization
                 W_sum = W_sum + sum(sum(net{i}.W .* net{i}.W));

@@ -13,9 +13,9 @@ net = {};
 
 % Conv layer
 c1.type = 'conv';
-c1.W = randn(3,3,3,10)/sqrt(3*3*3/2);
-c1.b = zeros(1,10);
-c1.stride = 2;
+c1.W = randn(3,3,3,32)/sqrt(3*3*3/2);
+c1.b = zeros(1,32);
+c1.stride = 1;
 c1.pad = 1;
 net{end+1} = c1;
 
@@ -25,8 +25,8 @@ net{end+1} = r1;
 
 % Conv layer
 c2.type = 'conv';
-c2.W = randn(3,3,10,10)/sqrt(3*10*3/2);
-c2.b = zeros(1,10);
+c2.W = randn(3,3,32,64)/sqrt(3*3*32/2);
+c2.b = zeros(1,64);
 c2.stride = 1;
 c2.pad = 1;
 net{end+1} = c2;
@@ -35,18 +35,25 @@ net{end+1} = c2;
 r2.type = 'relu';
 net{end+1} = r2;
 
+% Conv layer
+c3.type = 'conv';
+c3.W = randn(3,3,64,64)/sqrt(3*3*64);
+c3.b = zeros(1,64);
+c3.stride = 2;
+c3.pad = 1;
+net{end+1} = c3;
+
 % FC layer
 f1.type = 'fc';
-f1.W = randn(10, 2560, 'single')/sqrt(2560);
-f1.b = zeros(10, 1);
+f1.out_size = 10;
 net{end+1} = f1;
-
 
 % FC layer
 %   - type: 'fc'
 %   - W: weights
 %   - b: bias
 %   - X: input data for BP usage, added in training forward process
+%   - we can specify the W&b; beside we can only specify the out_size.
 % fc1.type = 'fc';
 % fc1.W = randn(H, D, 'single')/sqrt(D/2);
 % fc1.b = zeros(H, 1);

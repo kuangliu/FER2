@@ -32,19 +32,17 @@ if ~isfield(layer, 'pad')
 end
 
 if ~isa(layer.X, 'single')
-    fprintf('The input data is not single! Converted.\n')
+    fprintf('Convert input data type to single.\n')
     layer.X = single(layer.X);
 end
 
 if ~isa(layer.W, 'single')
-    fprintf('The weight is not single! Converted.\n')
+    fprintf('Convert weight data type to single.\n')
     layer.W = single(layer.W);
 end
 
-
 S = layer.stride;
 P = layer.pad;
-
 
 if nargin == 1 || isempty(varargin)
     % forward pass
@@ -145,8 +143,7 @@ for w = 1:oW
     end
 end
 
-% some crazy reshape tricks.
-% with these reshape moves, we can reduce 1 for-loop usage.
+% with these crazy reshape trick, we can remove the (for n = 1:N) loop
 M = reshape(M, kH*kW*C, N, oH*oW);
 M = permute(M, [1,3,2]); % [kH*kW*C, oH*oW, N]
 M = reshape(M, kH*kW*C, oH*oW*N);
