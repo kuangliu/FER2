@@ -26,6 +26,7 @@ X = bsxfun(@rdivide, X_train, std(X_train,1,2));
 X_val = bsxfun(@rdivide, X_val, std(X_train,1,2));
 y = y_train;
 
+
 % We don't need bias trick any more, cause we separate bias out of weights.
 % Bias trick. Stack bias into the data.
 %   Pro: We don't need to worry about bias anymore. 

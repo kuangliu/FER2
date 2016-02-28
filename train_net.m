@@ -91,6 +91,10 @@ for it = 1:num_iters
             case 'conv'
                 net{i}.X = X_batch;
                 [X_batch, net{i}] = conv_layer_batch(net{i});
+               
+            case 'pool'
+                net{i}.X = X_batch;
+                [X_batch, net{i}] = pool_layer(net{i});
         end
     end
     
@@ -158,6 +162,9 @@ for it = 1:num_iters
                 % update bias
                 [net{i}.b, net{i}.stateB] = ...
                     adam_update(net{i}.b, db, opts.lr, net{i}.stateB);
+                
+            case 'pool'
+                grad = pool_layer(net{i}, grad);
                 
         end
     end

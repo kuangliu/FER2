@@ -22,6 +22,9 @@ for i = 1:layer_num
         case 'conv'
             net{i}.X = X;
             [X, net{i}] = conv_layer_batch(net{i});
+        case 'pool'
+            net{i}.X = X;
+            [X, net{i}] = pool_layer(net{i});
     end
 end
 

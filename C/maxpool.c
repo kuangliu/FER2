@@ -11,7 +11,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
         int nrhs, const mxArray *prhs[]) {
     /* inputs:
      *  - X: input sized [H,W,C,N]
-     *  - kH, kW: kernel size
+     *  - kH, kW: pool size
      *  - S: stride
      *
      * output variable: 
@@ -19,6 +19,12 @@ void mexFunction(int nlhs, mxArray *plhs[],
      *  - index matrix: I of size [oH,oW,C,N]
      *
      * e.g. [y,inds] = maxpool(X, [kH,kW], S);
+     *
+     * Pooling is very much like convolution, instead of computing the dot product
+     * of receptive field [kH,kW,C], we just pick the maximum value of the pooling
+     * region [kH,kW].
+     *
+     * So you can see the 6 for-loops is just like in im2col/col2im.
      */
     
     float *X = (float *)mxGetPr(prhs[0]);
@@ -29,9 +35,9 @@ void mexFunction(int nlhs, mxArray *plhs[],
     int C = input_size[2];
     int N = input_size[3];
     
-    double *kernel_size = mxGetPr(prhs[1]);
-    int kH = kernel_size[0];
-    int kW = kernel_size[1];
+    double *pool_size = mxGetPr(prhs[1]);
+    int kH = pool_size[0];
+    int kW = pool_size[1];
     
     int S = mxGetScalar(prhs[2]);
     
@@ -60,7 +66,6 @@ void mexFunction(int nlhs, mxArray *plhs[],
                                 max_y = y+yy;
                                 max_x = x+xx;
                             }
-                            
                         }
                     }
                     M(h,w,c,n) = max_value;

@@ -36,12 +36,19 @@ r2.type = 'relu';
 net{end+1} = r2;
 
 % Conv layer
-c3.type = 'conv';
-c3.W = randn(3,3,64,64)/sqrt(3*3*64);
-c3.b = zeros(1,64);
-c3.stride = 2;
-c3.pad = 1;
-net{end+1} = c3;
+% c3.type = 'conv';
+% c3.W = randn(3,3,64,64)/sqrt(3*3*64);
+% c3.b = zeros(1,64);
+% c3.stride = 2;
+% c3.pad = 1;
+% net{end+1} = c3;
+
+% Max Pooling layer
+p1.type = 'pool';
+p1.pool_size = [2,2];
+p1.stride = 2;
+net{end+1} = p1;
+
 
 % FC layer
 f1.type = 'fc';
